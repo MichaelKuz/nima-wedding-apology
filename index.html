@@ -11,22 +11,16 @@
     <style>
         :root {
             --bg:             #0C0B0A;
-            --surface:        #141210;
-            --surface-raised: #1C1917;
             --text-primary:   #F5F0EB;
             --text-secondary: #8C8580;
             --accent:         #C4846E;
             --accent-dim:     rgba(196, 132, 110, 0.12);
-            --accent-glow:    rgba(196, 132, 110, 0.06);
             --hairline:       rgba(255, 255, 255, 0.07);
             --ease:           cubic-bezier(0.25, 0.1, 0.25, 1);
             --ease-out:       cubic-bezier(0.0, 0.0, 0.2, 1);
         }
 
-        *, *::before, *::after {
-            margin: 0; padding: 0;
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         html {
             font-size: 17px;
@@ -36,49 +30,36 @@
 
         body {
             font-family: 'Inter', system-ui, sans-serif;
-            background-color: var(--bg);
+            background: var(--bg);
             color: var(--text-primary);
-            min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* ─────────────────────────────
-           CANVAS & AMBIENT GLOW
-        ───────────────────────────── */
-        #confetti-canvas {
+        /* ══════════════════════════════════════
+           CANVAS layers
+        ══════════════════════════════════════ */
+        #particle-canvas {
             position: fixed;
             inset: 0;
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        /* Radial ambient glow behind the hero */
-        .hero-glow {
-            position: fixed;
-            top: -200px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 900px;
-            height: 600px;
-            background: radial-gradient(ellipse at center,
-                rgba(196, 132, 110, 0.10) 0%,
-                rgba(196, 132, 110, 0.03) 50%,
-                transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
 
-        /* ─────────────────────────────
-           INTRO SCENE
-        ───────────────────────────── */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+        }
 
-        /* Spacer that holds the scroll real estate for the animation */
+        /* ══════════════════════════════════════
+           INTRO SCENE
+        ══════════════════════════════════════ */
         .intro-spacer {
-            height: 220vh;
+            height: 400vh;
             position: relative;
         }
 
-        /* Sticky container — stays fixed in viewport while scrolling through spacer */
         .intro {
             position: sticky;
             top: 0;
@@ -90,78 +71,160 @@
             justify-content: center;
             overflow: hidden;
             z-index: 10;
-            /* --p is set by JS: 0 = start, 1 = end */
             --p: 0;
         }
 
-        /* Fade the entire intro out as scroll progresses */
-        .intro-inner {
-            opacity: calc(1 - var(--p) * 1.6);
-            will-change: opacity;
+        /* Black fade-out curtain at the end */
+        .intro::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--bg);
+            opacity: calc((var(--p) - 0.7) * 3.33);
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* ── "For" label ── */
+        .intro-for {
+            position: absolute;
+            top: clamp(32px, 6vh, 64px);
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--accent);
+            opacity: calc(1 - var(--p) * 4);
+            white-space: nowrap;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .intro-for::before, .intro-for::after {
+            content: '';
+            display: block;
+            width: 32px;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.4;
+        }
+
+        /* ── Name rows ── */
+        .intro-names {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            width: 100%;
-            pointer-events: none;
+            gap: 0;
+            z-index: 15;
+            position: relative;
         }
 
-        /* "For" label above names */
-        .intro-for {
-            font-family: 'Inter', sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 32px;
-            opacity: calc(1 - var(--p) * 3);
-            transform: translateY(calc(var(--p) * -20px));
-            will-change: transform, opacity;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .intro-for::before,
-        .intro-for::after {
-            content: '';
-            display: block;
-            width: 28px;
-            height: 1px;
-            background: var(--accent);
-            opacity: 0.5;
-        }
-
-        /* Names row */
-        .intro-names {
-            display: flex;
-            align-items: baseline;
-            justify-content: center;
-            gap: clamp(16px, 3vw, 48px);
-            width: 100%;
-            padding: 0 24px;
-            line-height: 0.92;
+        .intro-name-row {
+            overflow: hidden;
+            line-height: 0.88;
         }
 
         .intro-name {
+            display: block;
             font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: clamp(14vw, 18vw, 17rem);
             font-weight: 700;
+            font-size: clamp(22vw, 26vw, 28vw);
             letter-spacing: -0.04em;
+            line-height: 0.88;
             color: var(--text-primary);
-            will-change: transform;
-            white-space: nowrap;
+            will-change: transform, filter;
+            position: relative;
         }
 
+        /* NIMA — zooms toward viewer and flies off top as p increases */
         .intro-name--nima {
-            transform: translateX(calc(var(--p) * -55vw)) scale(calc(1 - var(--p) * 0.5));
-            transform-origin: right center;
+            transform:
+                scale(calc(1 + var(--p) * 4))
+                translateY(calc(var(--p) * -20vh));
+            filter:
+                blur(calc(var(--p) * var(--p) * 12px))
+                brightness(calc(1 + var(--p) * 0.8));
+            transform-origin: center bottom;
         }
 
+        /* RGB split on NIMA using text-shadow layers */
+        .intro-name--nima::before,
+        .intro-name--nima::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
+            line-height: inherit;
+            pointer-events: none;
+        }
+
+        .intro-name--nima::before {
+            color: rgba(255, 80, 80, 0.55);
+            transform: translateX(calc(var(--p) * -8px));
+            mix-blend-mode: screen;
+        }
+
+        .intro-name--nima::after {
+            color: rgba(80, 180, 255, 0.55);
+            transform: translateX(calc(var(--p) * 8px));
+            mix-blend-mode: screen;
+        }
+
+        /* ELIEN — comes from below, rises and zooms, flies off bottom */
         .intro-name--elien {
-            transform: translateX(calc(var(--p) * 55vw)) scale(calc(1 - var(--p) * 0.5));
-            transform-origin: left center;
+            transform:
+                scale(calc(1 + var(--p) * 3.5))
+                translateY(calc(var(--p) * 18vh));
+            filter:
+                blur(calc(var(--p) * var(--p) * 10px))
+                brightness(calc(1 + var(--p) * 0.6));
+            transform-origin: center top;
+        }
+
+        .intro-name--elien::before,
+        .intro-name--elien::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
+            line-height: inherit;
+            pointer-events: none;
+        }
+
+        .intro-name--elien::before {
+            color: rgba(255, 80, 80, 0.45);
+            transform: translateX(calc(var(--p) * -6px));
+            mix-blend-mode: screen;
+        }
+
+        .intro-name--elien::after {
+            color: rgba(80, 180, 255, 0.45);
+            transform: translateX(calc(var(--p) * 6px));
+            mix-blend-mode: screen;
+        }
+
+        /* ── & connector ── */
+        .intro-amp-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 4px 0;
+            opacity: calc(1 - var(--p) * 5);
+            transform: scale(calc(1 - var(--p) * 0.3));
+            will-change: opacity, transform;
+            z-index: 15;
         }
 
         .intro-amp {
@@ -170,69 +233,83 @@
             font-weight: 400;
             font-style: italic;
             color: var(--accent);
-            will-change: transform, opacity;
-            opacity: calc(1 - var(--p) * 4);
-            transform: scale(calc(1 + var(--p) * 0.2));
-            align-self: center;
             line-height: 1;
-            margin-bottom: 0.1em;
+            text-shadow:
+                0 0 40px rgba(196, 132, 110, 0.6),
+                0 0 80px rgba(196, 132, 110, 0.3),
+                0 0 160px rgba(196, 132, 110, 0.15);
+            animation: amppulse 2.4s ease-in-out infinite;
         }
 
-        /* Hairline rule that draws itself */
-        .intro-rule {
-            width: calc(var(--drawn) * 280px);
+        @keyframes amppulse {
+            0%, 100% { text-shadow: 0 0 40px rgba(196,132,110,0.6), 0 0 80px rgba(196,132,110,0.3); }
+            50%       { text-shadow: 0 0 60px rgba(196,132,110,0.9), 0 0 120px rgba(196,132,110,0.5), 0 0 200px rgba(196,132,110,0.2); }
+        }
+
+        .amp-rule {
+            flex: 1;
+            max-width: 80px;
             height: 1px;
-            background: var(--accent);
-            opacity: 0.3;
-            margin-top: 40px;
-            will-change: width;
-            --drawn: 0;
-            transition: none;
+            background: linear-gradient(to right, transparent, var(--accent));
+            opacity: 0.4;
         }
 
-        /* Scroll hint at bottom */
+        .amp-rule:last-child {
+            background: linear-gradient(to left, transparent, var(--accent));
+        }
+
+        /* ── Scroll hint ── */
         .intro-scroll-hint {
             position: absolute;
-            bottom: 48px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            opacity: calc(1 - var(--p) * 5);
-            will-change: opacity;
+            opacity: calc(1 - var(--p) * 8);
+            pointer-events: none;
+            z-index: 15;
         }
 
-        .scroll-hint-label {
+        .scroll-label {
             font-family: 'Inter', sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 400;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.25em;
             text-transform: uppercase;
             color: var(--text-secondary);
         }
 
-        .scroll-hint-line {
+        .scroll-line {
             width: 1px;
-            height: 32px;
+            height: 36px;
             background: linear-gradient(to bottom, var(--accent), transparent);
-            animation: scrollpulse 1.8s ease-in-out infinite;
+            animation: scrollpulse 1.6s ease-in-out infinite;
         }
 
         @keyframes scrollpulse {
-            0%, 100% { opacity: 0.3; transform: scaleY(1); }
-            50%       { opacity: 0.8; transform: scaleY(1.1); }
+            0%, 100% { opacity: 0.25; transform: scaleY(0.8) translateY(-4px); }
+            50%       { opacity: 0.9;  transform: scaleY(1.1) translateY(4px); }
         }
 
-        /* When intro has fully scrolled past, don't let it block content */
-        .intro-spacer.done .intro {
+        /* ══════════════════════════════════════
+           NOISE OVERLAY
+        ══════════════════════════════════════ */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.03;
             pointer-events: none;
+            z-index: 9999;
         }
 
-        /* ─────────────────────────────
-           LAYOUT
-        ───────────────────────────── */
+        /* ══════════════════════════════════════
+           PAGE CONTENT
+        ══════════════════════════════════════ */
         .page {
             max-width: 760px;
             margin: 0 auto;
@@ -241,9 +318,6 @@
             z-index: 1;
         }
 
-        /* ─────────────────────────────
-           HEADER
-        ───────────────────────────── */
         header {
             margin-bottom: 128px;
             opacity: 0;
@@ -251,10 +325,7 @@
             transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
         }
 
-        header.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        header.visible { opacity: 1; transform: translateY(0); }
 
         .eyebrow {
             display: inline-flex;
@@ -297,55 +368,30 @@
         .subtitle {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 1.2rem;
-            font-weight: 400;
             font-style: italic;
             color: var(--text-secondary);
             line-height: 1.65;
             max-width: 480px;
         }
 
-        /* ─────────────────────────────
-           REASONS
-        ───────────────────────────── */
-        .reasons {
-            margin-bottom: 128px;
-        }
+        .reasons { margin-bottom: 128px; }
 
         .reason {
             display: grid;
             grid-template-columns: 52px 1fr;
             gap: 0 36px;
-            padding: 36px 0;
+            padding: 36px 16px;
             border-top: 1px solid var(--hairline);
             opacity: 0;
             transform: translateY(16px);
-            transition:
-                opacity 0.55s var(--ease-out),
-                transform 0.55s var(--ease-out),
-                background 0.2s var(--ease);
-            cursor: default;
-            border-radius: 2px;
+            transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out), background 0.2s var(--ease);
             margin: 0 -16px;
-            padding-left: 16px;
-            padding-right: 16px;
         }
 
-        .reason:last-child {
-            border-bottom: 1px solid var(--hairline);
-        }
-
-        .reason.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .reason:hover {
-            background: var(--accent-dim);
-        }
-
-        .reason:hover .reason-number {
-            color: var(--text-primary);
-        }
+        .reason:last-child { border-bottom: 1px solid var(--hairline); }
+        .reason.visible    { opacity: 1; transform: translateY(0); }
+        .reason:hover      { background: var(--accent-dim); }
+        .reason:hover .reason-number { color: var(--text-primary); }
 
         .reason-number {
             font-family: 'Inter', sans-serif;
@@ -365,9 +411,6 @@
             font-weight: 300;
         }
 
-        /* ─────────────────────────────
-           DIVIDER
-        ───────────────────────────── */
         .section-divider {
             display: flex;
             align-items: center;
@@ -378,13 +421,9 @@
             transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
         }
 
-        .section-divider.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .section-divider.visible { opacity: 1; transform: translateY(0); }
 
-        .section-divider::before,
-        .section-divider::after {
+        .section-divider::before, .section-divider::after {
             content: '';
             flex: 1;
             height: 1px;
@@ -392,17 +431,12 @@
         }
 
         .divider-mark {
-            width: 5px;
-            height: 5px;
+            width: 5px; height: 5px;
             border-radius: 50%;
             background: var(--accent);
             opacity: 0.6;
-            flex-shrink: 0;
         }
 
-        /* ─────────────────────────────
-           CLOSING
-        ───────────────────────────── */
         .closing {
             max-width: 560px;
             margin: 0 auto;
@@ -412,10 +446,7 @@
             transition: opacity 0.65s var(--ease-out), transform 0.65s var(--ease-out);
         }
 
-        .closing.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .closing.visible { opacity: 1; transform: translateY(0); }
 
         .closing h2 {
             font-family: 'Cormorant Garamond', Georgia, serif;
@@ -446,70 +477,52 @@
             padding-top: 40px;
         }
 
-        /* ─────────────────────────────
-           NOISE TEXTURE OVERLAY
-        ───────────────────────────── */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-            opacity: 0.025;
-            pointer-events: none;
-            z-index: 200;
-        }
-
-        /* ─────────────────────────────
-           KEYFRAMES
-        ───────────────────────────── */
         @keyframes fadein {
             from { opacity: 0; transform: translateY(8px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ─────────────────────────────
-           RESPONSIVE
-        ───────────────────────────── */
         @media (max-width: 600px) {
             .page { padding: 72px 24px 100px; }
             header { margin-bottom: 88px; }
             .reasons { margin-bottom: 88px; }
-            .reason {
-                grid-template-columns: 40px 1fr;
-                gap: 0 20px;
-                margin: 0 -8px;
-                padding-left: 8px;
-                padding-right: 8px;
-            }
+            .reason { grid-template-columns: 40px 1fr; gap: 0 20px; }
         }
     </style>
 </head>
 <body>
 
-<div class="hero-glow"></div>
+<canvas id="particle-canvas"></canvas>
 <canvas id="confetti-canvas"></canvas>
 
-<!-- ── Scroll-driven intro ── -->
+<!-- ══ INTRO SCENE ══ -->
 <div class="intro-spacer" id="introSpacer">
     <div class="intro" id="intro">
-        <div class="intro-inner">
-            <p class="intro-for">For</p>
-            <div class="intro-names">
-                <span class="intro-name intro-name--nima">Nima</span>
-                <span class="intro-amp">&amp;</span>
-                <span class="intro-name intro-name--elien">Elien</span>
+        <p class="intro-for">For</p>
+
+        <div class="intro-names" id="introNames">
+            <div class="intro-name-row">
+                <span class="intro-name intro-name--nima" data-text="Nima">Nima</span>
             </div>
-            <div class="intro-rule" id="introRule"></div>
+            <div class="intro-amp-row">
+                <span class="amp-rule"></span>
+                <span class="intro-amp">&amp;</span>
+                <span class="amp-rule"></span>
+            </div>
+            <div class="intro-name-row">
+                <span class="intro-name intro-name--elien" data-text="Elien">Elien</span>
+            </div>
         </div>
+
         <div class="intro-scroll-hint">
-            <span class="scroll-hint-label">Scroll</span>
-            <div class="scroll-hint-line"></div>
+            <span class="scroll-label">Scroll</span>
+            <div class="scroll-line"></div>
         </div>
     </div>
 </div>
 
+<!-- ══ PAGE CONTENT ══ -->
 <div class="page">
-
     <header>
         <p class="eyebrow">A Note from Manhattan</p>
         <h1>12 Reasons I Can't Make It to Your <em>Wedding,</em> Nima&nbsp;&amp;&nbsp;Elien.</h1>
@@ -517,225 +530,214 @@
     </header>
 
     <div class="reasons">
-
-        <div class="reason">
-            <div class="reason-number">01</div>
-            <div class="reason-text">I tried to growth hack my calendar. The kids' bedtime sprint won the A/B test. It always does.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">02</div>
-            <div class="reason-text">Manhattan to San Miguel de Allende with children isn't a trip. It's a multi-phase campaign with too many failure points and no fallback plan.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">03</div>
-            <div class="reason-text">The CAC (Cost of Acquiring Childcare) for a destination wedding in Mexico exceeded my annual marketing budget. The LTV math isn't pretty.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">04</div>
-            <div class="reason-text">My KPIs this quarter: diapers changed, bedtime stories read, legendary Nima parties attended. One of these has been consistently underperforming.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">05</div>
-            <div class="reason-text">While you're scaling Pearmill, I'm scaling Mount Laundry. Different trajectories, same hustle.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">06</div>
-            <div class="reason-text">I'm deep in a growth sprint that lasts 18 years. Per child. The backlog is extensive and the velocity is not what I projected.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">07</div>
-            <div class="reason-text">User retention (kids) requires 24/7 on-call support. International travel violates every SLA I have committed to.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">08</div>
-            <div class="reason-text">My retargeting strategy failed. The kids won't let me leave the apartment after 6pm, let alone the country. Bounce rate: 100%.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">09</div>
-            <div class="reason-text">I optimized the wrong funnel. Breakfast → school drop-off → survive → pickup → collapse. Mexico doesn't fit the workflow.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">10</div>
-            <div class="reason-text">Manhattan to Brooklyn was already hard enough. Adding an international leg to a venue as beautiful as Instituto Allende only makes the guilt more exquisite.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">11</div>
-            <div class="reason-text">I'm running a lifetime value analysis on sleep. I am deep in the red. Adding a destination wedding would trigger a churn event I cannot recover from.</div>
-        </div>
-
-        <div class="reason">
-            <div class="reason-number">12</div>
-            <div class="reason-text">I A/B tested my excuses. This one had the highest conversion rate. It's a data-driven decision. I stand by it. I'm still sorry.</div>
-        </div>
-
+        <div class="reason"><div class="reason-number">01</div><div class="reason-text">I tried to growth hack my calendar. The kids' bedtime sprint won the A/B test. It always does.</div></div>
+        <div class="reason"><div class="reason-number">02</div><div class="reason-text">Manhattan to San Miguel de Allende with children isn't a trip. It's a multi-phase campaign with too many failure points and no fallback plan.</div></div>
+        <div class="reason"><div class="reason-number">03</div><div class="reason-text">The CAC (Cost of Acquiring Childcare) for a destination wedding in Mexico exceeded my annual marketing budget. The LTV math isn't pretty.</div></div>
+        <div class="reason"><div class="reason-number">04</div><div class="reason-text">My KPIs this quarter: diapers changed, bedtime stories read, legendary Nima parties attended. One of these has been consistently underperforming.</div></div>
+        <div class="reason"><div class="reason-number">05</div><div class="reason-text">While you're scaling Pearmill, I'm scaling Mount Laundry. Different trajectories, same hustle.</div></div>
+        <div class="reason"><div class="reason-number">06</div><div class="reason-text">I'm deep in a growth sprint that lasts 18 years. Per child. The backlog is extensive and the velocity is not what I projected.</div></div>
+        <div class="reason"><div class="reason-number">07</div><div class="reason-text">User retention (kids) requires 24/7 on-call support. International travel violates every SLA I have committed to.</div></div>
+        <div class="reason"><div class="reason-number">08</div><div class="reason-text">My retargeting strategy failed. The kids won't let me leave the apartment after 6pm, let alone the country. Bounce rate: 100%.</div></div>
+        <div class="reason"><div class="reason-number">09</div><div class="reason-text">I optimized the wrong funnel. Breakfast → school drop-off → survive → pickup → collapse. Mexico doesn't fit the workflow.</div></div>
+        <div class="reason"><div class="reason-number">10</div><div class="reason-text">Manhattan to Brooklyn was already hard enough. Adding an international leg to a venue as beautiful as Instituto Allende only makes the guilt more exquisite.</div></div>
+        <div class="reason"><div class="reason-number">11</div><div class="reason-text">I'm running a lifetime value analysis on sleep. I am deep in the red. Adding a destination wedding would trigger a churn event I cannot recover from.</div></div>
+        <div class="reason"><div class="reason-number">12</div><div class="reason-text">I A/B tested my excuses. This one had the highest conversion rate. It's a data-driven decision. I stand by it. I'm still sorry.</div></div>
     </div>
 
-    <div class="section-divider">
-        <div class="divider-mark"></div>
-    </div>
+    <div class="section-divider"><div class="divider-mark"></div></div>
 
     <div class="closing">
         <h2>But seriously, Nima.</h2>
-        <p>
-            I'm genuinely bummed to miss your day at Instituto Allende. You throw the best parties in Brooklyn,
-            and I know this wedding will be the most beautiful thing you've ever produced — and you've produced some great ones.
-        </p>
-        <p>
-            I'm so happy you found Elien. Here's to your greatest campaign yet: building Pearmill and
-            a lifetime of happiness together. I'll be thinking of you both and raising something
-            (almost certainly a sippy cup) from Manhattan in your honor.
-        </p>
-        <div class="signature">
-            With love and a genuine case of FOMO,<br>
-            Your Marketing Buddy ❤️
-        </div>
+        <p>I'm genuinely bummed to miss your day at Instituto Allende. You throw the best parties in Brooklyn, and I know this wedding will be the most beautiful thing you've ever produced — and you've produced some great ones.</p>
+        <p>I'm so happy you found Elien. Here's to your greatest campaign yet: building Pearmill and a lifetime of happiness together. I'll be thinking of you both and raising something (almost certainly a sippy cup) from Manhattan in your honor.</p>
+        <div class="signature">With love and a genuine case of FOMO,<br>Your Marketing Buddy ❤️</div>
     </div>
-
 </div>
 
 <script>
-    // ─────────────────────────────────────────────
-    // SCROLL-DRIVEN INTRO
-    // ─────────────────────────────────────────────
-    const spacer   = document.getElementById('introSpacer');
-    const intro    = document.getElementById('intro');
-    const rule     = document.getElementById('introRule');
+// ══════════════════════════════════════════════════
+// PARTICLE FIELD
+// ══════════════════════════════════════════════════
+(function () {
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
 
-    let confettiFired = false;
+    let W, H, particles;
 
-    function onScroll() {
-        const spacerH  = spacer.offsetHeight - window.innerHeight;
-        const scrolled = Math.max(0, window.scrollY);
-        const p        = Math.min(1, scrolled / spacerH); // 0 → 1
-
-        // Drive all CSS animations via a single custom property
-        intro.style.setProperty('--p', p);
-
-        // Draw the rule line in the first 30% of scroll
-        const drawn = Math.min(1, p / 0.3);
-        rule.style.setProperty('--drawn', drawn);
-
-        // Fire confetti once, near the end of the transition
-        if (p >= 0.75 && !confettiFired) {
-            confettiFired = true;
-            fireConfetti();
-        }
-
-        // Once fully past, make intro non-interactive
-        if (p >= 1) {
-            spacer.classList.add('done');
-        } else {
-            spacer.classList.remove('done');
-        }
+    function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
     }
 
-    // Animate the rule width via CSS — use a rAF loop to smooth it
-    let lastP = -1;
-    function tick() {
-        const scrolled = Math.max(0, window.scrollY);
-        const spacerH  = spacer.offsetHeight - window.innerHeight;
-        const p        = Math.min(1, scrolled / spacerH);
-
-        if (p !== lastP) {
-            intro.style.setProperty('--p', p);
-            const drawn = Math.min(1, p / 0.3);
-            rule.style.width = (drawn * 280) + 'px';
-
-            if (p >= 0.75 && !confettiFired) {
-                confettiFired = true;
-                fireConfetti();
-            }
-            lastP = p;
-        }
-        requestAnimationFrame(tick);
+    function init() {
+        resize();
+        particles = Array.from({ length: 120 }, () => ({
+            x:    Math.random() * W,
+            y:    Math.random() * H,
+            r:    Math.random() * 1.5 + 0.3,
+            vx:   (Math.random() - 0.5) * 0.15,
+            vy:   (Math.random() - 0.5) * 0.15,
+            base: Math.random() * 0.35 + 0.05,
+            phase: Math.random() * Math.PI * 2,
+        }));
     }
-    requestAnimationFrame(tick);
 
+    window.addEventListener('resize', resize);
 
-    // ─────────────────────────────────────────────
-    // SCROLL REVEAL for reasons
-    // ─────────────────────────────────────────────
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const delay = parseInt(entry.target.dataset.delay || 0);
-                setTimeout(() => entry.target.classList.add('visible'), delay);
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
+    let t = 0;
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        t += 0.008;
 
-    document.querySelectorAll('.reason').forEach((el, i) => {
-        el.dataset.delay = i * 55;
-        observer.observe(el);
-    });
+        // Only show particles while intro is visible
+        const spacer = document.getElementById('introSpacer');
+        const p = Math.min(1, window.scrollY / Math.max(1, spacer.offsetHeight - H));
+        const globalAlpha = Math.max(0, 1 - p * 1.8);
 
-    document.querySelectorAll('.closing, .section-divider, header').forEach(el => observer.observe(el));
+        if (globalAlpha > 0) {
+            particles.forEach(pt => {
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                if (pt.x < 0) pt.x = W;
+                if (pt.x > W) pt.x = 0;
+                if (pt.y < 0) pt.y = H;
+                if (pt.y > H) pt.y = 0;
 
-
-    // ─────────────────────────────────────────────
-    // CONFETTI (fires once at scroll transition)
-    // ─────────────────────────────────────────────
-    function fireConfetti() {
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx    = canvas.getContext('2d');
-
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        const COLORS   = ['#C4846E', '#8C7060', '#D4A99A', '#F5F0EB', '#78716C'];
-        const DURATION = 2800;
-        const start    = performance.now();
-
-        const particles = Array.from({ length: 52 }, () => {
-            const angle = (Math.random() * 160 + 190) * (Math.PI / 180);
-            const speed = Math.random() * 9 + 3;
-            return {
-                x:     canvas.width  / 2 + (Math.random() - 0.5) * 80,
-                y:     canvas.height / 2 + 40,
-                vx:    Math.cos(angle) * speed,
-                vy:    Math.sin(angle) * speed,
-                r:     Math.random() * 3 + 1.5,
-                color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            };
-        });
-
-        function draw(now) {
-            const elapsed = now - start;
-            if (elapsed > DURATION) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                return;
-            }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const t = elapsed / DURATION;
-            particles.forEach(p => {
-                p.vy += 0.2;
-                p.vx *= 0.994;
-                p.x  += p.vx;
-                p.y  += p.vy;
-                ctx.globalAlpha = Math.max(0, 1 - t * t * 1.5);
+                const alpha = globalAlpha * (pt.base + Math.sin(t + pt.phase) * 0.15);
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
+                ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(196, 132, 110, ${alpha})`;
                 ctx.fill();
             });
-            ctx.globalAlpha = 1;
-            requestAnimationFrame(draw);
         }
 
         requestAnimationFrame(draw);
     }
-</script>
 
+    init();
+    requestAnimationFrame(draw);
+})();
+
+
+// ══════════════════════════════════════════════════
+// SCROLL-DRIVEN INTRO
+// ══════════════════════════════════════════════════
+const spacer = document.getElementById('introSpacer');
+const intro  = document.getElementById('intro');
+let confettiFired = false;
+let lastP = -1;
+
+function tick() {
+    const H      = window.innerHeight;
+    const maxScroll = spacer.offsetHeight - H;
+    const p      = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+
+    if (p !== lastP) {
+        intro.style.setProperty('--p', p);
+        lastP = p;
+
+        // Fire confetti as the curtain falls
+        if (p >= 0.68 && !confettiFired) {
+            confettiFired = true;
+            fireConfetti();
+        }
+    }
+
+    requestAnimationFrame(tick);
+}
+
+requestAnimationFrame(tick);
+
+
+// ══════════════════════════════════════════════════
+// SCROLL REVEAL
+// ══════════════════════════════════════════════════
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const delay = parseInt(entry.target.dataset.delay || 0);
+            setTimeout(() => entry.target.classList.add('visible'), delay);
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
+
+document.querySelectorAll('.reason').forEach((el, i) => {
+    el.dataset.delay = i * 55;
+    observer.observe(el);
+});
+
+document.querySelectorAll('.closing, .section-divider, header').forEach(el => observer.observe(el));
+
+
+// ══════════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════════
+function fireConfetti() {
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx    = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const COLORS = ['#C4846E', '#8C7060', '#D4A99A', '#F5F0EB', '#78716C', '#E8B89A'];
+    const DURATION = 3200;
+    const start = performance.now();
+
+    // Mix of circles and thin rectangles for variety
+    const particles = Array.from({ length: 70 }, () => {
+        const angle = (Math.random() * 200 + 170) * (Math.PI / 180);
+        const speed = Math.random() * 12 + 4;
+        const isRect = Math.random() > 0.5;
+        return {
+            x:     canvas.width  / 2 + (Math.random() - 0.5) * 100,
+            y:     canvas.height * 0.55,
+            vx:    Math.cos(angle) * speed,
+            vy:    Math.sin(angle) * speed,
+            r:     Math.random() * 4 + 2,
+            w:     Math.random() * 10 + 4,
+            h:     Math.random() * 4 + 2,
+            rot:   Math.random() * Math.PI * 2,
+            rotV:  (Math.random() - 0.5) * 0.3,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            isRect,
+        };
+    });
+
+    function draw(now) {
+        const elapsed = now - start;
+        if (elapsed > DURATION) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const t = elapsed / DURATION;
+
+        particles.forEach(p => {
+            p.vy  += 0.22;
+            p.vx  *= 0.993;
+            p.x   += p.vx;
+            p.y   += p.vy;
+            p.rot += p.rotV;
+
+            const alpha = Math.max(0, 1 - t * t * 1.4);
+            ctx.globalAlpha = alpha;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            if (p.isRect) {
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
+}
+</script>
 </body>
 </html>

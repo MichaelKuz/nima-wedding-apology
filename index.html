@@ -3,507 +3,386 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorry I Can't Make It, Nima! 💔</title>
+    <title>Sorry I Can't Make It, Nima & Elien</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        * {
+        :root {
+            --bg:        #FAF8F5;
+            --surface:   #FFFFFF;
+            --text-primary:   #1C1917;
+            --text-secondary: #78716C;
+            --accent:    #C4846E;
+            --hairline:  rgba(0, 0, 0, 0.08);
+            --ease:      cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            font-size: 17px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
         body {
-            font-family: 'Quicksand', sans-serif;
-            background: linear-gradient(135deg, #ffeef8 0%, #e8f5ff 50%, #fff5f0 100%);
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
             min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
         }
 
-        /* Whimsical floating elements */
-        .floating-hearts {
+        /* ── Canvas ── */
+        #confetti-canvas {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
-            z-index: 1;
-            overflow: hidden;
+            z-index: 100;
         }
 
-        .heart {
-            position: absolute;
-            font-size: 20px;
-            opacity: 0.3;
-            animation: float 15s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(100vh) rotate(0deg);
-            }
-            50% {
-                transform: translateY(-10vh) rotate(180deg);
-            }
-        }
-
-        .container {
-            max-width: 900px;
+        /* ── Layout ── */
+        .page {
+            max-width: 720px;
             margin: 0 auto;
-            padding: 40px 20px;
-            position: relative;
-            z-index: 2;
+            padding: 96px 32px 120px;
         }
 
-        /* Header styling */
+        /* ── Header ── */
         header {
-            text-align: center;
-            margin-bottom: 60px;
-            animation: fadeInDown 1s ease-out;
+            margin-bottom: 112px;
+            opacity: 0;
+            animation: fadein 0.7s var(--ease) 0.1s forwards;
         }
 
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .eyebrow {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
         }
 
         h1 {
-            font-family: 'Caveat', cursive;
-            font-size: clamp(2.5rem, 8vw, 4.5rem);
-            color: #d63384;
-            margin-bottom: 15px;
-            line-height: 1.2;
-            text-shadow: 3px 3px 0px rgba(255, 255, 255, 0.8);
-            position: relative;
-            display: inline-block;
-        }
-
-        h1::after {
-            content: '✨';
-            position: absolute;
-            right: -40px;
-            top: -20px;
-            font-size: 2rem;
-            animation: twinkle 2s infinite;
-        }
-
-        @keyframes twinkle {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(2.6rem, 6vw, 4rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            margin-bottom: 24px;
         }
 
         .subtitle {
-            font-family: 'Caveat', cursive;
-            font-size: clamp(1.2rem, 4vw, 1.8rem);
-            color: #6c757d;
-            margin-top: 10px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.25rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 520px;
         }
 
-        /* Reasons list */
-        .reasons-container {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 30px;
-            padding: 40px 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 3px solid rgba(255, 255, 255, 0.9);
-            position: relative;
-            margin-bottom: 50px;
-        }
-
-        .reasons-container::before {
-            content: '🌸';
-            position: absolute;
-            top: -30px;
-            left: 30px;
-            font-size: 3rem;
-            animation: bounce 2s infinite;
-        }
-
-        .reasons-container::after {
-            content: '💐';
-            position: absolute;
-            bottom: -30px;
-            right: 30px;
-            font-size: 3rem;
-            animation: bounce 2s infinite 0.5s;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+        /* ── Reasons ── */
+        .reasons {
+            margin-bottom: 112px;
         }
 
         .reason {
-            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-            border-left: 5px solid #ffc107;
-            border-radius: 15px;
-            padding: 25px 30px;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: grid;
+            grid-template-columns: 48px 1fr;
+            gap: 0 32px;
+            padding: 32px 0;
+            border-top: 1px solid var(--hairline);
             opacity: 0;
-            transform: translateX(-50px);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transform: translateY(14px);
+            transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
         }
 
-        .reason::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5px;
-            height: 100%;
-            background: linear-gradient(to bottom, #ffc107, #ff6b9d, #c471ed);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .reason:hover {
-            transform: translateX(10px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
+        .reason:last-child {
+            border-bottom: 1px solid var(--hairline);
         }
 
         .reason.visible {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
         }
 
         .reason-number {
-            font-family: 'Caveat', cursive;
-            font-size: 2rem;
-            color: #d63384;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: inline-block;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            padding-top: 3px;
+            line-height: 1.75;
         }
 
         .reason-text {
-            font-size: 1.1rem;
-            color: #495057;
-            line-height: 1.6;
+            font-size: 1rem;
+            line-height: 1.75;
+            color: var(--text-primary);
             font-weight: 400;
         }
 
-        /* Heartfelt message */
-        .heartfelt-message {
-            background: linear-gradient(135deg, #fff5f7 0%, #fff 100%);
-            border-radius: 30px;
-            padding: 50px 40px;
+        /* ── Closing ── */
+        .closing {
+            max-width: 580px;
+            margin: 0 auto;
             text-align: center;
-            box-shadow: 0 15px 50px rgba(214, 51, 132, 0.15);
-            border: 3px dashed #ff6b9d;
-            position: relative;
-            animation: fadeIn 1s ease-out;
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .closing.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .heartfelt-message::before {
-            content: '💕';
-            position: absolute;
-            top: -35px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 4rem;
-            animation: heartbeat 1.5s infinite;
+        .closing-rule {
+            width: 48px;
+            height: 1px;
+            background: var(--accent);
+            margin: 0 auto 40px;
         }
 
-        @keyframes heartbeat {
-            0%, 100% { transform: translateX(-50%) scale(1); }
-            25% { transform: translateX(-50%) scale(1.2); }
-            50% { transform: translateX(-50%) scale(1); }
+        .closing h2 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text-primary);
+            margin-bottom: 32px;
+            line-height: 1.25;
         }
 
-        .heartfelt-message h2 {
-            font-family: 'Caveat', cursive;
-            font-size: 2.5rem;
-            color: #d63384;
-            margin-bottom: 25px;
-        }
-
-        .heartfelt-message p {
-            font-size: 1.2rem;
-            color: #495057;
+        .closing p {
+            font-size: 1rem;
             line-height: 1.8;
+            color: var(--text-secondary);
             margin-bottom: 20px;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
+        }
+
+        .closing p:last-of-type {
+            margin-bottom: 0;
         }
 
         .signature {
-            font-family: 'Caveat', cursive;
-            font-size: 2rem;
-            color: #6c757d;
-            margin-top: 30px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.2rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-top: 48px;
+            line-height: 1.6;
         }
 
-        /* Confetti canvas */
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
+        /* ── Animations ── */
+        @keyframes fadein {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px 15px;
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .page {
+                padding: 64px 24px 96px;
             }
 
-            .reasons-container {
-                padding: 30px 20px;
+            header {
+                margin-bottom: 80px;
+            }
+
+            .reasons {
+                margin-bottom: 80px;
             }
 
             .reason {
-                padding: 20px 20px;
-            }
-
-            .heartfelt-message {
-                padding: 40px 25px;
+                grid-template-columns: 36px 1fr;
+                gap: 0 20px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Floating hearts background -->
-    <div class="floating-hearts" id="floating-hearts"></div>
 
-    <!-- Confetti canvas -->
-    <canvas id="confetti-canvas"></canvas>
+<canvas id="confetti-canvas"></canvas>
 
-    <div class="container">
-        <header>
-            <h1>12 Reasons I'm Sorry I Can't Make It to Your Wedding, Nima & Elien!</h1>
-            <p class="subtitle">(A Marketing Buddy's Very Scientific Analysis of Why Manhattan + Kids ≠ San Miguel de Allende 🙈)</p>
-        </header>
+<div class="page">
 
-        <div class="reasons-container">
-            <div class="reason">
-                <div class="reason-number">Reason #1</div>
-                <div class="reason-text">I tried to growth hack my calendar, but the kids' bedtime sprint always wins the A/B test. Even Pearmill-level optimization can't solve this funnel.</div>
-            </div>
+    <header>
+        <p class="eyebrow">A Note from Manhattan</p>
+        <h1>12 Reasons I Can't Make It to Your Wedding, Nima &amp; Elien.</h1>
+        <p class="subtitle">A marketing buddy's rigorous, data-driven analysis of why Manhattan parenthood and San Miguel de Allende are mutually exclusive.</p>
+    </header>
 
-            <div class="reason">
-                <div class="reason-number">Reason #2</div>
-                <div class="reason-text">Manhattan to San Miguel de Allende with kids? That's not a trip, that's a multi-phase campaign with too many failure points.</div>
-            </div>
+    <div class="reasons">
 
-            <div class="reason">
-                <div class="reason-number">Reason #3</div>
-                <div class="reason-text">The CAC (Cost of Acquiring Childcare) for a Mexico wedding exceeded my annual marketing budget. And the LTV isn't looking good.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #4</div>
-                <div class="reason-text">I A/B tested my excuses and this one had the highest conversion rate with Elien and Nima. Data-driven decision-making!</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #5</div>
-                <div class="reason-text">My KPIs this quarter: Diapers changed ✅, Bedtime stories read ✅, Legendary Nima parties in BK attended: 📉 Instituto Allende weddings: 📉📉</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #6</div>
-                <div class="reason-text">I'm stuck in a growth sprint that lasts 18 years. Per child. The backlog is extensive, and my velocity is... slow.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #7</div>
-                <div class="reason-text">While you're scaling Pearmill, I'm scaling Mount Laundry. Different growth trajectories.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #8</div>
-                <div class="reason-text">User retention (kids) requires 24/7 on-call support. International travel violates every SLA I've committed to.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #9</div>
-                <div class="reason-text">I'm optimizing for a different funnel now: Breakfast → Preschool Drop-off → Survive → Pickup → Collapse. Mexico doesn't fit the workflow.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #10</div>
-                <div class="reason-text">Manhattan to BK was already hard enough. Manhattan to San Miguel de Allende? That's like asking me to open an international office with zero budget.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #11</div>
-                <div class="reason-text">My retargeting strategy failed—the kids won't let me leave the apartment after 6pm, let alone the country. Bounce rate: 100%.</div>
-            </div>
-
-            <div class="reason">
-                <div class="reason-number">Reason #12</div>
-                <div class="reason-text">I'm running a lifetime value analysis on sleep, and I'm deep in the red. Adding international travel would trigger a churn event I can't recover from.</div>
-            </div>
+        <div class="reason">
+            <div class="reason-number">01</div>
+            <div class="reason-text">I tried to growth hack my calendar. The kids' bedtime sprint won the A/B test. It always does.</div>
         </div>
 
-        <div class="heartfelt-message">
-            <h2>But seriously, Nima...</h2>
-            <p>
-                I'm genuinely bummed to miss your big day at Instituto Allende. You throw the best parties in Brooklyn, and I know your wedding to Elien in San Miguel de Allende will be absolutely legendary—probably the most beautiful party you've ever thrown.
-            </p>
-            <p>
-                I'm so happy you found Elien, and I wish I could be there in person to celebrate this incredible milestone with you both.
-                Even though my life is now ruled by bedtimes, juice boxes, and the never-ending quest for matching socks,
-                you've always been an amazing friend and the kind of marketing genius who makes growth sprints actually fun.
-            </p>
-            <p>
-                Here's to your greatest campaign yet: building Pearmill AND a lifetime of happiness with Elien! 🥂
-                Congrats, my friend. I'll be thinking of you both and raising a sippy cup from Manhattan in your honor.
-            </p>
-            <div class="signature">With love from Manhattan (and serious jealousy of your carefree BK lifestyle AND your Mexico wedding),<br>Your Marketing Buddy ❤️</div>
+        <div class="reason">
+            <div class="reason-number">02</div>
+            <div class="reason-text">Manhattan to San Miguel de Allende with children isn't a trip. It's a multi-phase campaign with too many failure points and no fallback plan.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">03</div>
+            <div class="reason-text">The CAC (Cost of Acquiring Childcare) for a destination wedding in Mexico exceeded my annual marketing budget. The LTV math isn't pretty.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">04</div>
+            <div class="reason-text">My KPIs this quarter: diapers changed, bedtime stories read, legendary Nima parties attended. One of these has been consistently underperforming.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">05</div>
+            <div class="reason-text">While you're scaling Pearmill, I'm scaling Mount Laundry. Different trajectories, same hustle.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">06</div>
+            <div class="reason-text">I'm deep in a growth sprint that lasts 18 years. Per child. The backlog is extensive and the velocity is not what I projected.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">07</div>
+            <div class="reason-text">User retention (kids) requires 24/7 on-call support. International travel violates every SLA I have committed to.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">08</div>
+            <div class="reason-text">My retargeting strategy failed. The kids won't let me leave the apartment after 6pm, let alone the country. Bounce rate: 100%.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">09</div>
+            <div class="reason-text">I optimized the wrong funnel. Breakfast → school drop-off → survive → pickup → collapse. Mexico doesn't fit the workflow.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">10</div>
+            <div class="reason-text">Manhattan to Brooklyn was already hard enough. Adding an international leg to a venue as beautiful as Instituto Allende only makes the guilt more exquisite.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">11</div>
+            <div class="reason-text">I'm running a lifetime value analysis on sleep. I am deep in the red. Adding a destination wedding would trigger a churn event I cannot recover from.</div>
+        </div>
+
+        <div class="reason">
+            <div class="reason-number">12</div>
+            <div class="reason-text">I A/B tested my excuses. This one had the highest conversion rate. It's a data-driven decision. I stand by it. I'm still sorry.</div>
+        </div>
+
+    </div>
+
+    <div class="closing">
+        <div class="closing-rule"></div>
+        <h2>But seriously, Nima.</h2>
+        <p>
+            I'm genuinely bummed to miss your day at Instituto Allende. You throw the best parties in Brooklyn,
+            and I know this wedding will be the most beautiful thing you've ever produced — and you've produced some great ones.
+        </p>
+        <p>
+            I'm so happy you found Elien. Here's to your greatest campaign yet: building Pearmill and
+            a lifetime of happiness together. I'll be thinking of you both and raising something
+            (almost certainly a sippy cup) from Manhattan in your honor.
+        </p>
+        <div class="signature">
+            With love and a genuine case of FOMO,<br>
+            Your Marketing Buddy ❤️
         </div>
     </div>
 
-    <script>
-        // Scroll animation for reasons
-        const reasons = document.querySelectorAll('.reason');
+</div>
 
-        const observerOptions = {
-            threshold: 0.2,
-            rootMargin: '0px 0px -50px 0px'
-        };
+<script>
+    // ── Scroll reveal ──
+    const reasons = document.querySelectorAll('.reason');
+    const closing = document.querySelector('.closing');
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, index) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.classList.add('visible');
-                    }, index * 100);
-                }
-            });
-        }, observerOptions);
-
-        reasons.forEach(reason => {
-            observer.observe(reason);
-        });
-
-        // Create floating hearts
-        function createFloatingHearts() {
-            const container = document.getElementById('floating-hearts');
-            const hearts = ['💕', '💖', '💗', '💝', '💓', '🌸', '🌺', '🌼'];
-
-            for (let i = 0; i < 20; i++) {
-                const heart = document.createElement('div');
-                heart.className = 'heart';
-                heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-                heart.style.left = Math.random() * 100 + '%';
-                heart.style.animationDelay = Math.random() * 15 + 's';
-                heart.style.animationDuration = (15 + Math.random() * 10) + 's';
-                container.appendChild(heart);
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                const delay = entry.target.dataset.delay || 0;
+                setTimeout(() => entry.target.classList.add('visible'), delay);
+                observer.unobserve(entry.target);
             }
-        }
+        });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
-        createFloatingHearts();
+    reasons.forEach((el, i) => {
+        el.dataset.delay = i * 60;
+        observer.observe(el);
+    });
 
-        // Confetti effect
+    observer.observe(closing);
+
+    // ── One-time confetti burst ──
+    (function () {
         const canvas = document.getElementById('confetti-canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
+
+        canvas.width  = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const confettiPieces = [];
-        const confettiColors = ['#ff6b9d', '#ffc107', '#c471ed', '#00d4ff', '#ff5757'];
+        const COLORS  = ['#C4846E', '#78716C', '#D4A99A', '#A8978F'];
+        const DURATION = 2400; // ms — then stops completely
+        const start   = performance.now();
 
-        class Confetti {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = -10;
-                this.size = Math.random() * 8 + 4;
-                this.speedY = Math.random() * 3 + 2;
-                this.speedX = Math.random() * 2 - 1;
-                this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
-                this.rotation = Math.random() * 360;
-                this.rotationSpeed = Math.random() * 4 - 2;
+        const dots = Array.from({ length: 40 }, () => ({
+            x:   canvas.width  / 2 + (Math.random() - 0.5) * 120,
+            y:   canvas.height / 2,
+            vx:  (Math.random() - 0.5) * 9,
+            vy:  -(Math.random() * 10 + 4),
+            r:   Math.random() * 4 + 2,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            alpha: 1,
+        }));
+
+        function draw(now) {
+            const elapsed = now - start;
+            if (elapsed > DURATION) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return; // stop — never called again
             }
 
-            update() {
-                this.y += this.speedY;
-                this.x += this.speedX;
-                this.rotation += this.rotationSpeed;
-
-                if (this.y > canvas.height) {
-                    this.y = -10;
-                    this.x = Math.random() * canvas.width;
-                }
-            }
-
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation * Math.PI / 180);
-                ctx.fillStyle = this.color;
-                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-                ctx.restore();
-            }
-        }
-
-        // Create initial confetti
-        for (let i = 0; i < 50; i++) {
-            confettiPieces.push(new Confetti());
-        }
-
-        function animateConfetti() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            confettiPieces.forEach(piece => {
-                piece.update();
-                piece.draw();
+            const progress = elapsed / DURATION;
+
+            dots.forEach(d => {
+                d.vy += 0.25; // gravity
+                d.x  += d.vx;
+                d.y  += d.vy;
+                d.alpha = 1 - Math.pow(progress, 2);
+
+                ctx.globalAlpha = Math.max(0, d.alpha);
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                ctx.fillStyle = d.color;
+                ctx.fill();
             });
 
-            requestAnimationFrame(animateConfetti);
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(draw);
         }
 
-        animateConfetti();
+        // Start after a very brief delay to let the page paint first
+        setTimeout(() => requestAnimationFrame(draw), 300);
+    })();
+</script>
 
-        // Resize canvas on window resize
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        // Add a fun click effect
-        document.addEventListener('click', (e) => {
-            const burst = 10;
-            for (let i = 0; i < burst; i++) {
-                const confetti = new Confetti();
-                confetti.x = e.clientX;
-                confetti.y = e.clientY;
-                confetti.speedY = Math.random() * 6 - 3;
-                confetti.speedX = Math.random() * 6 - 3;
-                confettiPieces.push(confetti);
-            }
-
-            // Remove excess confetti to prevent memory issues
-            if (confettiPieces.length > 150) {
-                confettiPieces.splice(0, burst);
-            }
-        });
-    </script>
 </body>
 </html>

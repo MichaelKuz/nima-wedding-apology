@@ -32,7 +32,6 @@
             font-size: 17px;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            scroll-behavior: smooth;
         }
 
         body {
@@ -70,6 +69,168 @@
         }
 
         /* ─────────────────────────────
+           INTRO SCENE
+        ───────────────────────────── */
+
+        /* Spacer that holds the scroll real estate for the animation */
+        .intro-spacer {
+            height: 220vh;
+            position: relative;
+        }
+
+        /* Sticky container — stays fixed in viewport while scrolling through spacer */
+        .intro {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 10;
+            /* --p is set by JS: 0 = start, 1 = end */
+            --p: 0;
+        }
+
+        /* Fade the entire intro out as scroll progresses */
+        .intro-inner {
+            opacity: calc(1 - var(--p) * 1.6);
+            will-change: opacity;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        /* "For" label above names */
+        .intro-for {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 32px;
+            opacity: calc(1 - var(--p) * 3);
+            transform: translateY(calc(var(--p) * -20px));
+            will-change: transform, opacity;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .intro-for::before,
+        .intro-for::after {
+            content: '';
+            display: block;
+            width: 28px;
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.5;
+        }
+
+        /* Names row */
+        .intro-names {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: clamp(16px, 3vw, 48px);
+            width: 100%;
+            padding: 0 24px;
+            line-height: 0.92;
+        }
+
+        .intro-name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(14vw, 18vw, 17rem);
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            color: var(--text-primary);
+            will-change: transform;
+            white-space: nowrap;
+        }
+
+        .intro-name--nima {
+            transform: translateX(calc(var(--p) * -55vw)) scale(calc(1 - var(--p) * 0.5));
+            transform-origin: right center;
+        }
+
+        .intro-name--elien {
+            transform: translateX(calc(var(--p) * 55vw)) scale(calc(1 - var(--p) * 0.5));
+            transform-origin: left center;
+        }
+
+        .intro-amp {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: clamp(6vw, 8vw, 7rem);
+            font-weight: 400;
+            font-style: italic;
+            color: var(--accent);
+            will-change: transform, opacity;
+            opacity: calc(1 - var(--p) * 4);
+            transform: scale(calc(1 + var(--p) * 0.2));
+            align-self: center;
+            line-height: 1;
+            margin-bottom: 0.1em;
+        }
+
+        /* Hairline rule that draws itself */
+        .intro-rule {
+            width: calc(var(--drawn) * 280px);
+            height: 1px;
+            background: var(--accent);
+            opacity: 0.3;
+            margin-top: 40px;
+            will-change: width;
+            --drawn: 0;
+            transition: none;
+        }
+
+        /* Scroll hint at bottom */
+        .intro-scroll-hint {
+            position: absolute;
+            bottom: 48px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: calc(1 - var(--p) * 5);
+            will-change: opacity;
+        }
+
+        .scroll-hint-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .scroll-hint-line {
+            width: 1px;
+            height: 32px;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+            animation: scrollpulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes scrollpulse {
+            0%, 100% { opacity: 0.3; transform: scaleY(1); }
+            50%       { opacity: 0.8; transform: scaleY(1.1); }
+        }
+
+        /* When intro has fully scrolled past, don't let it block content */
+        .intro-spacer.done .intro {
+            pointer-events: none;
+        }
+
+        /* ─────────────────────────────
            LAYOUT
         ───────────────────────────── */
         .page {
@@ -86,7 +247,13 @@
         header {
             margin-bottom: 128px;
             opacity: 0;
-            animation: fadein 0.9s var(--ease-out) 0.15s forwards;
+            transform: translateY(8px);
+            transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+        }
+
+        header.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .eyebrow {
@@ -322,6 +489,25 @@
 <div class="hero-glow"></div>
 <canvas id="confetti-canvas"></canvas>
 
+<!-- ── Scroll-driven intro ── -->
+<div class="intro-spacer" id="introSpacer">
+    <div class="intro" id="intro">
+        <div class="intro-inner">
+            <p class="intro-for">For</p>
+            <div class="intro-names">
+                <span class="intro-name intro-name--nima">Nima</span>
+                <span class="intro-amp">&amp;</span>
+                <span class="intro-name intro-name--elien">Elien</span>
+            </div>
+            <div class="intro-rule" id="introRule"></div>
+        </div>
+        <div class="intro-scroll-hint">
+            <span class="scroll-hint-label">Scroll</span>
+            <div class="scroll-hint-line"></div>
+        </div>
+    </div>
+</div>
+
 <div class="page">
 
     <header>
@@ -418,9 +604,67 @@
 </div>
 
 <script>
-    // ── Scroll reveal ──
-    const revealEls = document.querySelectorAll('.reason, .closing, .section-divider');
+    // ─────────────────────────────────────────────
+    // SCROLL-DRIVEN INTRO
+    // ─────────────────────────────────────────────
+    const spacer   = document.getElementById('introSpacer');
+    const intro    = document.getElementById('intro');
+    const rule     = document.getElementById('introRule');
 
+    let confettiFired = false;
+
+    function onScroll() {
+        const spacerH  = spacer.offsetHeight - window.innerHeight;
+        const scrolled = Math.max(0, window.scrollY);
+        const p        = Math.min(1, scrolled / spacerH); // 0 → 1
+
+        // Drive all CSS animations via a single custom property
+        intro.style.setProperty('--p', p);
+
+        // Draw the rule line in the first 30% of scroll
+        const drawn = Math.min(1, p / 0.3);
+        rule.style.setProperty('--drawn', drawn);
+
+        // Fire confetti once, near the end of the transition
+        if (p >= 0.75 && !confettiFired) {
+            confettiFired = true;
+            fireConfetti();
+        }
+
+        // Once fully past, make intro non-interactive
+        if (p >= 1) {
+            spacer.classList.add('done');
+        } else {
+            spacer.classList.remove('done');
+        }
+    }
+
+    // Animate the rule width via CSS — use a rAF loop to smooth it
+    let lastP = -1;
+    function tick() {
+        const scrolled = Math.max(0, window.scrollY);
+        const spacerH  = spacer.offsetHeight - window.innerHeight;
+        const p        = Math.min(1, scrolled / spacerH);
+
+        if (p !== lastP) {
+            intro.style.setProperty('--p', p);
+            const drawn = Math.min(1, p / 0.3);
+            rule.style.width = (drawn * 280) + 'px';
+
+            if (p >= 0.75 && !confettiFired) {
+                confettiFired = true;
+                fireConfetti();
+            }
+            lastP = p;
+        }
+        requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+
+    // ─────────────────────────────────────────────
+    // SCROLL REVEAL for reasons
+    // ─────────────────────────────────────────────
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -436,29 +680,29 @@
         observer.observe(el);
     });
 
-    document.querySelectorAll('.closing, .section-divider').forEach(el => observer.observe(el));
+    document.querySelectorAll('.closing, .section-divider, header').forEach(el => observer.observe(el));
 
-    // ── One-time confetti burst ──
-    (function () {
+
+    // ─────────────────────────────────────────────
+    // CONFETTI (fires once at scroll transition)
+    // ─────────────────────────────────────────────
+    function fireConfetti() {
         const canvas = document.getElementById('confetti-canvas');
         const ctx    = canvas.getContext('2d');
 
-        function resize() {
-            canvas.width  = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        resize();
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         const COLORS   = ['#C4846E', '#8C7060', '#D4A99A', '#F5F0EB', '#78716C'];
         const DURATION = 2800;
         const start    = performance.now();
 
-        const particles = Array.from({ length: 48 }, () => {
-            const angle  = (Math.random() * 140 + 200) * (Math.PI / 180); // fan upward
-            const speed  = Math.random() * 8 + 3;
+        const particles = Array.from({ length: 52 }, () => {
+            const angle = (Math.random() * 160 + 190) * (Math.PI / 180);
+            const speed = Math.random() * 9 + 3;
             return {
-                x:     canvas.width  / 2 + (Math.random() - 0.5) * 60,
-                y:     canvas.height / 2,
+                x:     canvas.width  / 2 + (Math.random() - 0.5) * 80,
+                y:     canvas.height / 2 + 40,
                 vx:    Math.cos(angle) * speed,
                 vy:    Math.sin(angle) * speed,
                 r:     Math.random() * 3 + 1.5,
@@ -467,36 +711,30 @@
         });
 
         function draw(now) {
-            const elapsed  = now - start;
+            const elapsed = now - start;
             if (elapsed > DURATION) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 return;
             }
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             const t = elapsed / DURATION;
-
             particles.forEach(p => {
-                p.vy += 0.18;
-                p.vx *= 0.995;
+                p.vy += 0.2;
+                p.vx *= 0.994;
                 p.x  += p.vx;
                 p.y  += p.vy;
-
-                const alpha = Math.max(0, 1 - t * t * 1.4);
-                ctx.globalAlpha = alpha;
+                ctx.globalAlpha = Math.max(0, 1 - t * t * 1.5);
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
                 ctx.fillStyle = p.color;
                 ctx.fill();
             });
-
             ctx.globalAlpha = 1;
             requestAnimationFrame(draw);
         }
 
-        setTimeout(() => requestAnimationFrame(draw), 400);
-    })();
+        requestAnimationFrame(draw);
+    }
 </script>
 
 </body>

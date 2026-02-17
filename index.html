@@ -58,6 +58,8 @@
         .intro-spacer {
             height: 400vh;
             position: relative;
+            /* Clip horizontal overflow from scaled names, but allow vertical */
+            overflow-x: clip;
         }
 
         .intro {
@@ -69,19 +71,21 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            /* No overflow:hidden — names scale beyond viewport and must not be clipped
+               The curtain div handles the visual wipe instead */
+            overflow: visible;
             z-index: 10;
             --p: 0;
         }
 
-        /* Black fade-out curtain — JS sets opacity directly */
+        /* Black fade-out curtain — covers full viewport, JS sets opacity */
         .intro-curtain {
-            position: absolute;
+            position: fixed;
             inset: 0;
             background: var(--bg);
             opacity: 0;
             pointer-events: none;
-            z-index: 20;
+            z-index: 50;
         }
 
         /* ── "For" label ── */
@@ -121,10 +125,13 @@
             gap: 0;
             z-index: 15;
             position: relative;
+            /* Must NOT clip — names scale way beyond their natural bounds */
+            overflow: visible;
         }
 
         .intro-name-row {
-            overflow: hidden;
+            /* No overflow:hidden — names need to blow past their container */
+            overflow: visible;
             line-height: 0.88;
         }
 
@@ -132,12 +139,14 @@
             display: block;
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-weight: 700;
-            font-size: clamp(22vw, 26vw, 28vw);
+            font-size: clamp(20vw, 24vw, 26vw);
             letter-spacing: -0.04em;
             line-height: 0.88;
             color: var(--text-primary);
             will-change: transform, filter;
             position: relative;
+            /* Overflow visible so scaled text bleeds past container */
+            overflow: visible;
         }
 
         /* NIMA — JS drives transforms directly via style attribute */

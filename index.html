@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex, nofollow">
     <title>RSVP Simulator | For Nima & Elien</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +20,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: none;
         }
 
         /* Game Container */
@@ -48,6 +49,8 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             z-index: 100;
             transition: opacity 0.6s ease, transform 0.6s ease;
+            padding: 2rem;
+            text-align: center;
         }
 
         .intro-screen.hidden {
@@ -69,7 +72,15 @@
             font-size: 1.3rem;
             color: #6B5D54;
             font-style: italic;
-            margin-bottom: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .intro-instructions {
+            font-size: 1rem;
+            color: #6B5D54;
+            margin-bottom: 2rem;
+            max-width: 400px;
+            line-height: 1.6;
         }
 
         .start-button {
@@ -83,6 +94,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
+            touch-action: manipulation;
         }
 
         .start-button:hover {
@@ -91,16 +103,23 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
+        .start-button:active {
+            transform: translateY(0);
+        }
+
         /* Game Canvas */
         #gameCanvas {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
-            cursor: none;
+            /* Show default cursor on desktop; touch devices have no cursor */
+            cursor: crosshair;
+            touch-action: none;
+            display: block;
         }
 
-        /* Custom Cursor */
+        /* Custom Cursor — desktop only */
         .custom-cursor {
             position: fixed;
             width: 30px;
@@ -111,6 +130,12 @@
             z-index: 200;
             transition: transform 0.1s ease;
             mix-blend-mode: difference;
+            /* Hidden until mouse moves (avoids showing at 0,0 on touch devices) */
+            opacity: 0;
+        }
+
+        .custom-cursor.visible {
+            opacity: 1;
         }
 
         .custom-cursor.grabbing {
@@ -139,6 +164,11 @@
             color: #6B5D54;
         }
 
+        .timer.urgent {
+            color: #DC2626;
+            border-color: #DC2626;
+        }
+
         .attempt-counter {
             background: white;
             padding: 0.5rem 1rem;
@@ -160,6 +190,8 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.8s ease;
+            padding: 1rem;
+            overflow-y: auto;
         }
 
         .game-over.visible {
@@ -172,6 +204,7 @@
             font-size: 2.5rem;
             color: #8B7355;
             margin-bottom: 2rem;
+            text-align: center;
         }
 
         .stats {
@@ -180,6 +213,8 @@
             padding: 2rem 3rem;
             margin-bottom: 2rem;
             text-align: center;
+            width: 90%;
+            max-width: 500px;
         }
 
         .stat-line {
@@ -279,16 +314,19 @@
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
-            .intro-title { font-size: 2.5rem; }
-            .intro-subtitle { font-size: 1.1rem; }
-            .game-over-title { font-size: 2rem; }
-            .stats { padding: 1.5rem 2rem; }
-            .leaderboard { padding: 1.5rem; }
+            .intro-title { font-size: 2.2rem; }
+            .intro-subtitle { font-size: 1rem; }
+            .intro-instructions { font-size: 0.9rem; }
+            .game-over-title { font-size: 1.8rem; }
+            .stats { padding: 1.2rem 1.5rem; }
+            .stat-line { font-size: 1rem; }
+            .leaderboard { padding: 1.2rem; }
+            .sincere-text { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
-    <!-- Custom Cursor -->
+    <!-- Custom Cursor (desktop only, hidden until mouse moves) -->
     <div class="custom-cursor" id="cursor"></div>
 
     <!-- Game Container -->
@@ -297,7 +335,11 @@
         <div class="intro-screen" id="introScreen">
             <h1 class="intro-title">RSVP Simulator</h1>
             <p class="intro-subtitle">Michael vs. Life: The Wedding Edition</p>
-            <button class="start-button" onclick="startGame()">Attempt to RSVP</button>
+            <p class="intro-instructions">
+                Guide Michael to the RSVP button before time runs out.<br>
+                Move your cursor (or finger) to lead him there — and click when he reaches it.
+            </p>
+            <button class="start-button" id="startButton">Attempt to RSVP</button>
         </div>
 
         <!-- Game Canvas -->
@@ -305,7 +347,7 @@
 
         <!-- Game UI -->
         <div class="game-ui" id="gameUI" style="display: none;">
-            <div class="timer">Time Left: <span id="timeLeft">60</span>s</div>
+            <div class="timer" id="timerDisplay">Time Left: <span id="timeLeft">60</span>s</div>
             <div class="attempt-counter">Attempts: <span id="attempts">0</span></div>
         </div>
 
@@ -317,7 +359,7 @@
                 <div class="stat-line">Michael failed to RSVP</div>
                 <div class="stat-line">Blocked by: <span class="stat-number" id="blockerCount">0</span> life events</div>
                 <div class="stat-line">Attempts made: <span class="stat-number" id="finalAttempts">0</span></div>
-                <div class="stat-line">Closest distance: <span class="stat-number" id="closestDistance">0</span>px</div>
+                <div class="stat-line">Closest approach: <span class="stat-number" id="closestDistance">0</span>px from button</div>
                 <div class="stat-line">(Approximately <span class="stat-number">3,147</span> miles from San Miguel de Allende)</div>
             </div>
 
@@ -337,11 +379,11 @@
                 </div>
                 <div class="leaderboard-entry">
                     <span class="leaderboard-name">Work Email #47</span>
-                    <span class="leaderboard-score">∞ attempts</span>
+                    <span class="leaderboard-score">&#8734; attempts</span>
                 </div>
             </div>
 
-            <button class="start-button" onclick="showSincereMessage()">Continue</button>
+            <button class="start-button" id="continueButton">Continue</button>
         </div>
 
         <!-- Sincere Message -->
@@ -349,9 +391,9 @@
             <div class="sincere-text">
                 Behind every excuse was a choice.<br>
                 I chose wrong.<br><br>
-                <em>Nima & Elien</em>, you deserved better.<br>
+                <em>Nima &amp; Elien</em>, you deserved better.<br>
                 This ridiculous game is my way of saying:<br>
-                I'm genuinely sorry I wasn't there.<br><br>
+                I&#8217;m genuinely sorry I wasn&#8217;t there.<br><br>
                 Your friendship matters more than all these pixels.
             </div>
             <div class="final-message">
@@ -365,93 +407,168 @@
     <canvas id="confettiCanvas"></canvas>
 
     <script>
-        // Game State
-        let gameState = {
-            isPlaying: false,
-            attempts: 0,
-            timeLeft: 60,
-            blockers: [],
-            playerX: 0,
-            playerY: 0,
-            targetX: 0,
-            targetY: 0,
-            mouseX: 0,
-            mouseY: 0,
-            closestDistance: Infinity,
-            blockerCount: 0,
-            gameTimer: null,
-            animationFrame: null
-        };
+        // ─── Constants ────────────────────────────────────────────────────────────
 
-        // Canvas setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const BUTTON_WIDTH  = 200;
+        const BUTTON_HEIGHT = 60;
+        const PLAYER_RADIUS = 15;
+        const PLAYER_LERP   = 0.12;   // how quickly Michael follows the pointer
+        const MAX_BLOCKERS  = 12;
+        const GAME_DURATION = 60;     // seconds
 
-        // Custom cursor
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX - 15 + 'px';
-            cursor.style.top = e.clientY - 15 + 'px';
-            if (gameState.isPlaying) {
-                gameState.mouseX = e.clientX;
-                gameState.mouseY = e.clientY;
-            }
-        });
+        // ─── Blocker types ────────────────────────────────────────────────────────
 
-        // Blocker types with labels
         const BLOCKER_TYPES = [
-            { label: 'Q4 Planning', color: '#4A5568', size: 80 },
+            { label: 'Q4 Planning',        color: '#4A5568', size: 80 },
             { label: 'Slack Notification', color: '#6B46C1', size: 60 },
-            { label: "Kid's Bedtime", color: '#DC2626', size: 100 },
-            { label: 'Work Email', color: '#2563EB', size: 70 },
-            { label: "Mom's Call", color: '#10B981', size: 75 },
-            { label: 'Client Meeting', color: '#F59E0B', size: 85 },
-            { label: 'Netflix Autoplay', color: '#EF4444', size: 65 },
-            { label: 'Mortgage Payment', color: '#059669', size: 90 },
-            { label: 'School Pickup', color: '#8B5CF6', size: 75 },
-            { label: 'Grocery Run', color: '#EC4899', size: 70 },
-            { label: 'Zoom Fatigue', color: '#6B7280', size: 80 },
+            { label: "Kid's Bedtime",      color: '#DC2626', size: 100 },
+            { label: 'Work Email',         color: '#2563EB', size: 70 },
+            { label: "Mom's Call",         color: '#10B981', size: 75 },
+            { label: 'Client Meeting',     color: '#F59E0B', size: 85 },
+            { label: 'Netflix Autoplay',   color: '#EF4444', size: 65 },
+            { label: 'Mortgage Payment',   color: '#059669', size: 90 },
+            { label: 'School Pickup',      color: '#8B5CF6', size: 75 },
+            { label: 'Grocery Run',        color: '#EC4899', size: 70 },
+            { label: 'Zoom Fatigue',       color: '#6B7280', size: 80 },
             { label: 'Existential Crisis', color: '#1F2937', size: 95 }
         ];
 
-        // Blocker class
+        // ─── DOM refs ─────────────────────────────────────────────────────────────
+
+        const canvas         = document.getElementById('gameCanvas');
+        const ctx            = canvas.getContext('2d');
+        const cursorEl       = document.getElementById('cursor');
+        const introScreen    = document.getElementById('introScreen');
+        const gameUIEl       = document.getElementById('gameUI');
+        const gameOverEl     = document.getElementById('gameOver');
+        const sincereEl      = document.getElementById('sincereMessage');
+        const timeLeftEl     = document.getElementById('timeLeft');
+        const attemptsEl     = document.getElementById('attempts');
+        const timerDisplay   = document.getElementById('timerDisplay');
+        const blockerCountEl = document.getElementById('blockerCount');
+        const finalAttemptEl = document.getElementById('finalAttempts');
+        const closestDistEl  = document.getElementById('closestDistance');
+        const yourScoreEl    = document.getElementById('yourScore');
+
+        // ─── Game state ───────────────────────────────────────────────────────────
+
+        let gs = {
+            isPlaying:       false,
+            attempts:        0,
+            timeLeft:        GAME_DURATION,
+            blockers:        [],
+            // player position in canvas-space (initialised on first resize)
+            playerX:         0,
+            playerY:         0,
+            // where the pointer is, in canvas-space
+            pointerX:        0,
+            pointerY:        0,
+            // center of the RSVP button (canvas-space)
+            targetX:         0,
+            targetY:         0,
+            closestDistance: Infinity,
+            totalBlockers:   0,
+            gameTimer:       null,
+            animFrame:       null,
+            // Flash feedback state
+            flashFrames:     0,  // > 0 → show red flash
+            flashMessage:    '',
+            // Whether we have a live pointer (avoids teleporting player on first
+            // mousemove when the page loads)
+            hasPointer:      false,
+            isTouchDevice:   false,
+        };
+
+        // ─── Coordinate helpers ───────────────────────────────────────────────────
+
+        /**
+         * Convert a viewport (clientX/clientY) coordinate into canvas-local pixels,
+         * accounting for any CSS scaling between the canvas element's layout size
+         * and its actual pixel dimensions.
+         */
+        function toCanvas(clientX, clientY) {
+            const rect   = canvas.getBoundingClientRect();
+            const scaleX = canvas.width  / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top)  * scaleY
+            };
+        }
+
+        // ─── Canvas resize ────────────────────────────────────────────────────────
+
+        function resizeCanvas() {
+            canvas.width  = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            // Button always at canvas centre
+            gs.targetX = canvas.width  / 2;
+            gs.targetY = canvas.height / 2;
+
+            // Keep player at canvas centre; also reset pointer so it doesn't
+            // drift to a stale position after orientation change.
+            gs.playerX  = canvas.width  / 2;
+            gs.playerY  = canvas.height / 2;
+            gs.pointerX = canvas.width  / 2;
+            gs.pointerY = canvas.height / 2;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();   // sets everything before any interaction
+
+        // ─── Blocker class ────────────────────────────────────────────────────────
+
         class Blocker {
             constructor(type, x, y) {
-                this.type = type;
-                this.x = x;
-                this.y = y;
-                this.vx = (Math.random() - 0.5) * 2;
-                this.vy = (Math.random() - 0.5) * 2;
-                this.size = type.size;
-                this.color = type.color;
-                this.label = type.label;
-                this.angle = Math.random() * Math.PI * 2;
-                this.angleSpeed = (Math.random() - 0.5) * 0.05;
+                this.label      = type.label;
+                this.color      = type.color;
+                this.radius     = type.size / 2;   // treat as circle for hit-testing
+                this.x          = x;
+                this.y          = y;
+                this.vx         = (Math.random() - 0.5) * 2.5;
+                this.vy         = (Math.random() - 0.5) * 2.5;
+                this.drawAngle  = Math.random() * Math.PI * 2;
+                this.angleSpeed = (Math.random() - 0.5) * 0.04;
+                // visual square side = diameter of circle
+                this.side       = type.size;
             }
 
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.angle += this.angleSpeed;
+                this.x         += this.vx;
+                this.y         += this.vy;
+                this.drawAngle += this.angleSpeed;
 
-                // Bounce off walls
-                if (this.x - this.size/2 < 0 || this.x + this.size/2 > canvas.width) {
-                    this.vx = -this.vx;
+                const r = this.radius;
+
+                // Bounce off walls (use radius so edge of blocker hits wall)
+                if (this.x - r < 0) {
+                    this.x  = r;
+                    this.vx = Math.abs(this.vx);
                 }
-                if (this.y - this.size/2 < 0 || this.y + this.size/2 > canvas.height) {
-                    this.vy = -this.vy;
+                if (this.x + r > canvas.width) {
+                    this.x  = canvas.width - r;
+                    this.vx = -Math.abs(this.vx);
+                }
+                if (this.y - r < 0) {
+                    this.y  = r;
+                    this.vy = Math.abs(this.vy);
+                }
+                if (this.y + r > canvas.height) {
+                    this.y  = canvas.height - r;
+                    this.vy = -Math.abs(this.vy);
                 }
 
-                // Gravitational pull towards RSVP button (makes it harder)
-                const dx = gameState.targetX - this.x;
-                const dy = gameState.targetY - this.y;
+                // Gravitational pull toward the RSVP button (makes it harder)
+                const dx   = gs.targetX - this.x;
+                const dy   = gs.targetY - this.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 100 && dist < 300) {
-                    this.vx += (dx / dist) * 0.05;
-                    this.vy += (dy / dist) * 0.05;
+                if (dist > 120 && dist < 280) {
+                    this.vx += (dx / dist) * 0.04;
+                    this.vy += (dy / dist) * 0.04;
                 }
 
-                // Speed limit
+                // Speed cap
                 const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
                 if (speed > 3) {
                     this.vx = (this.vx / speed) * 3;
@@ -462,268 +579,448 @@
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle);
+                ctx.rotate(this.drawAngle);
 
-                // Draw blocker box
-                ctx.fillStyle = this.color;
-                ctx.globalAlpha = 0.9;
-                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                ctx.globalAlpha = 0.92;
+                ctx.fillStyle   = this.color;
+                const h = this.side;
+                ctx.fillRect(-h / 2, -h / 2, h, h);
 
-                // Draw label
-                ctx.fillStyle = 'white';
-                ctx.font = '14px "EB Garamond", serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
                 ctx.globalAlpha = 1;
+                ctx.fillStyle   = 'white';
+                ctx.font        = `bold 13px "EB Garamond", serif`;
+                ctx.textAlign   = 'center';
+                ctx.textBaseline = 'middle';
                 ctx.fillText(this.label, 0, 0);
 
                 ctx.restore();
             }
 
-            isBlocking(x, y) {
-                return Math.abs(x - this.x) < this.size/2 && Math.abs(y - this.y) < this.size/2;
+            /**
+             * Circle-based hit test so it matches the visual rotation.
+             * Using a circle avoids axis-alignment issues with the rotating square.
+             */
+            hits(px, py) {
+                const dx = px - this.x;
+                const dy = py - this.y;
+                return dx * dx + dy * dy < this.radius * this.radius;
             }
         }
 
-        // Initialize canvas size
-        function resizeCanvas() {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            gameState.targetX = canvas.width / 2;
-            gameState.targetY = canvas.height / 2;
+        // ─── Blocker spawning ─────────────────────────────────────────────────────
+
+        function spawnBlocker() {
+            const type  = BLOCKER_TYPES[Math.floor(Math.random() * BLOCKER_TYPES.length)];
+            const angle = Math.random() * Math.PI * 2;
+            // Spawn at a comfortable distance from the target, but never off-screen
+            const minDist = 180;
+            const maxDist = Math.min(
+                250,
+                Math.min(canvas.width, canvas.height) / 2 - type.size / 2 - 10
+            );
+            const dist = minDist + Math.random() * Math.max(0, maxDist - minDist);
+
+            let x = gs.targetX + Math.cos(angle) * dist;
+            let y = gs.targetY + Math.sin(angle) * dist;
+
+            // Clamp within canvas
+            const r = type.size / 2;
+            x = Math.max(r, Math.min(canvas.width  - r, x));
+            y = Math.max(r, Math.min(canvas.height - r, y));
+
+            gs.blockers.push(new Blocker(type, x, y));
+            gs.totalBlockers++;
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
-        // Start game
+        // ─── Game start / end ─────────────────────────────────────────────────────
+
         function startGame() {
-            document.getElementById('introScreen').classList.add('hidden');
-            document.getElementById('gameUI').style.display = 'flex';
+            introScreen.classList.add('hidden');
+            gameUIEl.style.display = 'flex';
 
-            gameState.isPlaying = true;
-            gameState.attempts = 0;
-            gameState.timeLeft = 60;
-            gameState.blockers = [];
-            gameState.closestDistance = Infinity;
-            gameState.blockerCount = 0;
+            // Reset state
+            gs.isPlaying       = true;
+            gs.attempts        = 0;
+            gs.timeLeft        = GAME_DURATION;
+            gs.blockers        = [];
+            gs.closestDistance = Infinity;
+            gs.totalBlockers   = 0;
+            gs.flashFrames     = 0;
+            gs.flashMessage    = '';
+            gs.hasPointer      = false;
 
-            // Start spawning blockers
+            // Player and pointer start at canvas centre
+            gs.playerX  = canvas.width  / 2;
+            gs.playerY  = canvas.height / 2;
+            gs.pointerX = canvas.width  / 2;
+            gs.pointerY = canvas.height / 2;
+
+            attemptsEl.textContent = '0';
+            timeLeftEl.textContent = GAME_DURATION;
+            timerDisplay.classList.remove('urgent');
+
+            // Initial blockers
+            spawnBlocker();
             spawnBlocker();
 
-            // Start game timer
-            gameState.gameTimer = setInterval(() => {
-                gameState.timeLeft--;
-                document.getElementById('timeLeft').textContent = gameState.timeLeft;
+            // Countdown timer
+            gs.gameTimer = setInterval(() => {
+                gs.timeLeft--;
+                timeLeftEl.textContent = gs.timeLeft;
 
-                // Spawn more blockers over time
-                if (gameState.timeLeft % 5 === 0 && gameState.blockers.length < 12) {
+                if (gs.timeLeft <= 10) {
+                    timerDisplay.classList.add('urgent');
+                }
+
+                // Spawn more blockers as time passes
+                if (gs.timeLeft % 8 === 0 && gs.blockers.length < MAX_BLOCKERS) {
                     spawnBlocker();
                 }
 
-                if (gameState.timeLeft <= 0) {
+                if (gs.timeLeft <= 0) {
                     endGame();
                 }
             }, 1000);
 
-            // Start game loop
             gameLoop();
         }
 
-        // Spawn a new blocker
-        function spawnBlocker() {
-            const type = BLOCKER_TYPES[Math.floor(Math.random() * BLOCKER_TYPES.length)];
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 200 + Math.random() * 100;
-            const x = gameState.targetX + Math.cos(angle) * distance;
-            const y = gameState.targetY + Math.sin(angle) * distance;
+        function endGame() {
+            gs.isPlaying = false;
+            clearInterval(gs.gameTimer);
+            cancelAnimationFrame(gs.animFrame);
 
-            gameState.blockers.push(new Blocker(type, x, y));
-            gameState.blockerCount++;
+            const closest = gs.closestDistance === Infinity ? 'N/A' : gs.closestDistance + 'px';
+            blockerCountEl.textContent = gs.totalBlockers;
+            finalAttemptEl.textContent = gs.attempts;
+            closestDistEl.textContent  = gs.closestDistance === Infinity ? 'never tried' : gs.closestDistance + 'px';
+            yourScoreEl.textContent    = gs.attempts + ' attempts';
+
+            setTimeout(() => {
+                gameOverEl.classList.add('visible');
+            }, 600);
         }
 
-        // Game loop
+        function showSincereMessage() {
+            gameOverEl.style.display = 'none';
+            sincereEl.classList.add('visible');
+            setTimeout(fireConfetti, 1500);
+        }
+
+        // ─── Attempt / click handling ─────────────────────────────────────────────
+
+        /**
+         * Called whenever the player clicks or taps the canvas.
+         * clientX / clientY are viewport coordinates from the event.
+         */
+        function handleAttempt(clientX, clientY) {
+            if (!gs.isPlaying) return;
+
+            gs.attempts++;
+            attemptsEl.textContent = gs.attempts;
+
+            // Where did the user actually click/tap, in canvas-space?
+            const clickPos = toCanvas(clientX, clientY);
+
+            // Did the click land on the button?
+            const clickOnButton =
+                Math.abs(clickPos.x - gs.targetX) <= BUTTON_WIDTH  / 2 &&
+                Math.abs(clickPos.y - gs.targetY) <= BUTTON_HEIGHT / 2;
+
+            // Is Michael (the player dot) currently on the button?
+            const playerOnButton =
+                Math.abs(gs.playerX - gs.targetX) <= BUTTON_WIDTH  / 2 &&
+                Math.abs(gs.playerY - gs.targetY) <= BUTTON_HEIGHT / 2;
+
+            // Is Michael currently blocked?
+            let blockedBy = null;
+            for (const b of gs.blockers) {
+                if (b.hits(gs.playerX, gs.playerY)) {
+                    blockedBy = b;
+                    break;
+                }
+            }
+
+            if (clickOnButton && playerOnButton && !blockedBy) {
+                // Player actually did it — shouldn't be easy, but it's possible
+                alert('Wait, you actually did it? This wasn\'t supposed to be possible...');
+                endGame();
+                return;
+            }
+
+            // Provide specific failure feedback
+            if (blockedBy) {
+                triggerFlash(`Blocked by "${blockedBy.label}"!`);
+            } else if (!playerOnButton) {
+                const dist = Math.round(Math.sqrt(
+                    Math.pow(gs.playerX - gs.targetX, 2) +
+                    Math.pow(gs.playerY - gs.targetY, 2)
+                ));
+                triggerFlash(`Michael is ${dist}px away — get closer first!`);
+            } else if (!clickOnButton) {
+                triggerFlash('You missed the button!');
+            }
+        }
+
+        function triggerFlash(message) {
+            gs.flashFrames  = 40;   // ~0.67s at 60fps
+            gs.flashMessage = message;
+        }
+
+        // ─── Game loop ────────────────────────────────────────────────────────────
+
         function gameLoop() {
-            if (!gameState.isPlaying) return;
+            if (!gs.isPlaying) return;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw RSVP card background
+            // Background
             ctx.fillStyle = '#FFFCF9';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw decorative border
+            // Decorative border
             ctx.strokeStyle = '#D4C4B8';
-            ctx.lineWidth = 2;
+            ctx.lineWidth   = 2;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
             ctx.setLineDash([]);
 
-            // Draw RSVP button
-            const buttonWidth = 200;
-            const buttonHeight = 60;
-            const buttonX = gameState.targetX - buttonWidth/2;
-            const buttonY = gameState.targetY - buttonHeight/2;
+            // ── RSVP button ──
+            const bx = gs.targetX - BUTTON_WIDTH  / 2;
+            const by = gs.targetY - BUTTON_HEIGHT / 2;
 
-            // Button glow effect
             ctx.shadowColor = '#8B7355';
-            ctx.shadowBlur = 20;
-            ctx.fillStyle = '#8B7355';
-            ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+            ctx.shadowBlur  = 20;
+            ctx.fillStyle   = '#8B7355';
+            ctx.fillRect(bx, by, BUTTON_WIDTH, BUTTON_HEIGHT);
+            ctx.shadowBlur  = 0;
+
+            ctx.fillStyle    = 'white';
+            ctx.font         = 'bold 18px "EB Garamond", serif';
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('ACCEPT WITH JOY', gs.targetX, gs.targetY);
+
+            // ── Move player toward pointer ──
+            // Only move if we have received at least one pointer event so the
+            // player dot doesn't fly from (0,0) to centre on game start.
+            if (gs.hasPointer) {
+                gs.playerX += (gs.pointerX - gs.playerX) * PLAYER_LERP;
+                gs.playerY += (gs.pointerY - gs.playerY) * PLAYER_LERP;
+            }
+
+            // Clamp player inside canvas
+            gs.playerX = Math.max(PLAYER_RADIUS, Math.min(canvas.width  - PLAYER_RADIUS, gs.playerX));
+            gs.playerY = Math.max(PLAYER_RADIUS, Math.min(canvas.height - PLAYER_RADIUS, gs.playerY));
+
+            // ── Blockers ──
+            let isBlocked = false;
+            for (const b of gs.blockers) {
+                b.update();
+
+                // Push player away if overlapping
+                if (b.hits(gs.playerX, gs.playerY)) {
+                    isBlocked = true;
+                    const dx   = gs.playerX - b.x;
+                    const dy   = gs.playerY - b.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    gs.playerX += (dx / dist) * 6;
+                    gs.playerY += (dy / dist) * 6;
+                }
+
+                b.draw();
+            }
+
+            // ── Track closest approach to button ──
+            const distToButton = Math.round(Math.sqrt(
+                Math.pow(gs.playerX - gs.targetX, 2) +
+                Math.pow(gs.playerY - gs.targetY, 2)
+            ));
+            // Subtract button half-diagonal so distance = 0 when player is on button
+            const edgeDist = Math.max(0, distToButton - Math.sqrt(
+                Math.pow(BUTTON_WIDTH  / 2, 2) +
+                Math.pow(BUTTON_HEIGHT / 2, 2)
+            ));
+            if (edgeDist < gs.closestDistance) {
+                gs.closestDistance = Math.round(edgeDist);
+            }
+
+            // ── Draw player (Michael) ──
+            const playerColor = isBlocked ? '#EF4444' : '#10B981';
+
+            // Outer glow
+            ctx.shadowColor = playerColor;
+            ctx.shadowBlur  = 12;
+            ctx.fillStyle   = playerColor;
+            ctx.beginPath();
+            ctx.arc(gs.playerX, gs.playerY, PLAYER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
             ctx.shadowBlur = 0;
 
-            // Button text
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 18px "EB Garamond", serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('ACCEPT WITH JOY', gameState.targetX, gameState.targetY);
-
-            // Update and draw blockers
-            gameState.blockers.forEach(blocker => {
-                blocker.update();
-                blocker.draw();
-            });
-
-            // Draw player (Michael)
-            const playerRadius = 15;
-            gameState.playerX += (gameState.mouseX - gameState.playerX) * 0.1;
-            gameState.playerY += (gameState.mouseY - gameState.playerY) * 0.1;
-
-            // Check if blocked
-            let isBlocked = false;
-            gameState.blockers.forEach(blocker => {
-                if (blocker.isBlocking(gameState.playerX, gameState.playerY)) {
-                    isBlocked = true;
-                    // Push player away
-                    const dx = gameState.playerX - blocker.x;
-                    const dy = gameState.playerY - blocker.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist > 0) {
-                        gameState.playerX += (dx / dist) * 5;
-                        gameState.playerY += (dy / dist) * 5;
-                    }
-                }
-            });
-
-            // Draw player
-            ctx.fillStyle = isBlocked ? '#EF4444' : '#10B981';
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
             ctx.beginPath();
-            ctx.arc(gameState.playerX, gameState.playerY, playerRadius, 0, Math.PI * 2);
+            ctx.arc(gs.playerX - 4, gs.playerY - 4, PLAYER_RADIUS * 0.45, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw "Michael" label
-            ctx.fillStyle = '#2C2825';
-            ctx.font = '12px "EB Garamond", serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Michael', gameState.playerX, gameState.playerY - 25);
+            // "Michael" label
+            ctx.fillStyle    = '#2C2825';
+            ctx.font         = '12px "EB Garamond", serif';
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('Michael', gs.playerX, gs.playerY - PLAYER_RADIUS - 8);
 
-            // Check if clicking on button
-            const distance = Math.sqrt(
-                Math.pow(gameState.playerX - gameState.targetX, 2) +
-                Math.pow(gameState.playerY - gameState.targetY, 2)
-            );
+            // ── Flash feedback overlay ──
+            if (gs.flashFrames > 0) {
+                gs.flashFrames--;
 
-            if (distance < Math.min(gameState.closestDistance, 999)) {
-                gameState.closestDistance = Math.floor(distance);
+                // Fade out over last 20 frames
+                const alpha = Math.min(1, gs.flashFrames / 20) * 0.18;
+                ctx.fillStyle = `rgba(220, 38, 38, ${alpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Message text
+                const msgAlpha = Math.min(1, gs.flashFrames / 15);
+                ctx.globalAlpha  = msgAlpha;
+                ctx.fillStyle    = '#DC2626';
+                ctx.font         = 'bold 16px "EB Garamond", serif';
+                ctx.textAlign    = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(gs.flashMessage, canvas.width / 2, canvas.height - 50);
+                ctx.globalAlpha  = 1;
             }
 
-            // Check for click
-            canvas.onclick = () => {
-                if (gameState.isPlaying &&
-                    Math.abs(gameState.playerX - gameState.targetX) < buttonWidth/2 &&
-                    Math.abs(gameState.playerY - gameState.targetY) < buttonHeight/2 &&
-                    !isBlocked) {
-                    // This should never happen in practice
-                    alert("Wait, you actually did it? This wasn't supposed to be possible...");
-                    endGame();
-                }
-                gameState.attempts++;
-                document.getElementById('attempts').textContent = gameState.attempts;
-            };
-
-            gameState.animationFrame = requestAnimationFrame(gameLoop);
+            gs.animFrame = requestAnimationFrame(gameLoop);
         }
 
-        // End game
-        function endGame() {
-            gameState.isPlaying = false;
-            clearInterval(gameState.gameTimer);
-            cancelAnimationFrame(gameState.animationFrame);
+        // ─── Input events — registered ONCE ───────────────────────────────────────
 
-            // Update final stats
-            document.getElementById('blockerCount').textContent = gameState.blockerCount;
-            document.getElementById('finalAttempts').textContent = gameState.attempts;
-            document.getElementById('closestDistance').textContent = gameState.closestDistance;
-            document.getElementById('yourScore').textContent = gameState.attempts + ' attempts';
+        // Mouse movement — updates custom cursor + player pointer target
+        document.addEventListener('mousemove', (e) => {
+            // Show and position custom cursor
+            cursorEl.classList.add('visible');
+            cursorEl.style.left = (e.clientX - 15) + 'px';
+            cursorEl.style.top  = (e.clientY - 15) + 'px';
 
-            // Show game over screen
-            setTimeout(() => {
-                document.getElementById('gameOver').classList.add('visible');
-            }, 500);
-        }
+            if (gs.isPlaying) {
+                const pos    = toCanvas(e.clientX, e.clientY);
+                gs.pointerX  = pos.x;
+                gs.pointerY  = pos.y;
+                gs.hasPointer = true;
+            }
+        });
 
-        // Show sincere message
-        function showSincereMessage() {
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('sincereMessage').classList.add('visible');
+        // Mouse click on canvas
+        canvas.addEventListener('click', (e) => {
+            handleAttempt(e.clientX, e.clientY);
+        });
 
-            // Fire confetti after a moment
-            setTimeout(fireConfetti, 1500);
-        }
+        // Touch start — move pointer immediately so player begins tracking finger
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            gs.isTouchDevice = true;
+            cursorEl.style.display = 'none';   // hide mouse cursor on touch devices
 
-        // Confetti effect
+            if (gs.isPlaying && e.touches.length > 0) {
+                const t      = e.touches[0];
+                const pos    = toCanvas(t.clientX, t.clientY);
+                gs.pointerX  = pos.x;
+                gs.pointerY  = pos.y;
+                gs.hasPointer = true;
+            }
+        }, { passive: false });
+
+        // Touch move — track finger
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (gs.isPlaying && e.touches.length > 0) {
+                const t      = e.touches[0];
+                const pos    = toCanvas(t.clientX, t.clientY);
+                gs.pointerX  = pos.x;
+                gs.pointerY  = pos.y;
+                gs.hasPointer = true;
+            }
+        }, { passive: false });
+
+        // Touch end — treat as a click/attempt at the last known touch position
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (e.changedTouches.length > 0) {
+                const t = e.changedTouches[0];
+                handleAttempt(t.clientX, t.clientY);
+            }
+        }, { passive: false });
+
+        // Prevent the default context menu on long-press (mobile)
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // ─── Button wiring ────────────────────────────────────────────────────────
+
+        document.getElementById('startButton').addEventListener('click',    startGame);
+        document.getElementById('startButton').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startGame();
+        }, { passive: false });
+
+        document.getElementById('continueButton').addEventListener('click',    showSincereMessage);
+        document.getElementById('continueButton').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            showSincereMessage();
+        }, { passive: false });
+
+        // ─── Confetti ─────────────────────────────────────────────────────────────
+
         function fireConfetti() {
-            const canvas = document.getElementById('confettiCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const cc  = document.getElementById('confettiCanvas');
+            const cctx = cc.getContext('2d');
+            cc.width  = window.innerWidth;
+            cc.height = window.innerHeight;
 
-            const colors = ['#8B7355', '#D4C4B8', '#FAF6F2', '#6B5D54', '#F0E8E0'];
+            const colors    = ['#8B7355', '#D4C4B8', '#FAF6F2', '#6B5D54', '#F0E8E0'];
             const particles = [];
 
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 120; i++) {
                 particles.push({
-                    x: Math.random() * canvas.width,
-                    y: -20,
-                    vx: (Math.random() - 0.5) * 2,
-                    vy: Math.random() * 3 + 2,
-                    size: Math.random() * 4 + 2,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    angle: Math.random() * Math.PI * 2,
-                    angleSpeed: (Math.random() - 0.5) * 0.1
+                    x:          Math.random() * cc.width,
+                    y:          -20 - Math.random() * 60,
+                    vx:         (Math.random() - 0.5) * 3,
+                    vy:         Math.random() * 3 + 1.5,
+                    size:       Math.random() * 5 + 2,
+                    color:      colors[Math.floor(Math.random() * colors.length)],
+                    angle:      Math.random() * Math.PI * 2,
+                    angleSpeed: (Math.random() - 0.5) * 0.12
                 });
             }
 
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            function animateConfetti() {
+                cctx.clearRect(0, 0, cc.width, cc.height);
 
-                particles.forEach(p => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.1; // gravity
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p  = particles[i];
+                    p.x     += p.vx;
+                    p.y     += p.vy;
+                    p.vy    += 0.08; // gravity
                     p.angle += p.angleSpeed;
 
-                    ctx.save();
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(p.angle);
-                    ctx.fillStyle = p.color;
-                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
-                    ctx.restore();
-                });
-
-                // Remove particles that have fallen off screen
-                particles.forEach((p, i) => {
-                    if (p.y > canvas.height) {
+                    if (p.y > cc.height) {
                         particles.splice(i, 1);
+                        continue;
                     }
-                });
+
+                    cctx.save();
+                    cctx.translate(p.x, p.y);
+                    cctx.rotate(p.angle);
+                    cctx.fillStyle = p.color;
+                    cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    cctx.restore();
+                }
 
                 if (particles.length > 0) {
-                    requestAnimationFrame(animate);
+                    requestAnimationFrame(animateConfetti);
                 }
             }
 
-            animate();
+            animateConfetti();
         }
     </script>
 </body>

@@ -412,8 +412,8 @@
         const BUTTON_WIDTH  = 200;
         const BUTTON_HEIGHT = 60;
         const PLAYER_RADIUS = 15;
-        const PLAYER_LERP   = 0.12;   // how quickly Michael follows the pointer
-        const MAX_BLOCKERS  = 12;
+        const PLAYER_LERP   = 0.06;   // how quickly Michael follows the pointer (slower = harder)
+        const MAX_BLOCKERS  = 15;
         const GAME_DURATION = 60;     // seconds
 
         // ─── Blocker types ────────────────────────────────────────────────────────
@@ -460,6 +460,9 @@
             // player position in canvas-space (initialised on first resize)
             playerX:         0,
             playerY:         0,
+            // player velocity for momentum
+            playerVX:        0,
+            playerVY:        0,
             // where the pointer is, in canvas-space
             pointerX:        0,
             pointerY:        0,
@@ -559,20 +562,33 @@
                     this.vy = -Math.abs(this.vy);
                 }
 
-                // Gravitational pull toward the RSVP button (makes it harder)
+                // Stronger gravitational pull toward the RSVP button
                 const dx   = gs.targetX - this.x;
                 const dy   = gs.targetY - this.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 120 && dist < 280) {
-                    this.vx += (dx / dist) * 0.04;
-                    this.vy += (dy / dist) * 0.04;
+                if (dist > 60 && dist < 350) {
+                    // Much stronger attraction to cluster around button
+                    this.vx += (dx / dist) * 0.12;
+                    this.vy += (dy / dist) * 0.12;
                 }
 
-                // Speed cap
+                // Also repel Michael when he gets close
+                if (gs.hasPointer) {
+                    const mdx = gs.playerX - this.x;
+                    const mdy = gs.playerY - this.y;
+                    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                    if (mdist < 100 && mdist > 0) {
+                        // Move toward Michael to block him
+                        this.vx += (mdx / mdist) * 0.08;
+                        this.vy += (mdy / mdist) * 0.08;
+                    }
+                }
+
+                // Higher speed cap for more chaos
                 const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                if (speed > 3) {
-                    this.vx = (this.vx / speed) * 3;
-                    this.vy = (this.vy / speed) * 3;
+                if (speed > 4.5) {
+                    this.vx = (this.vx / speed) * 4.5;
+                    this.vy = (this.vy / speed) * 4.5;
                 }
             }
 
@@ -609,12 +625,13 @@
 
         // ─── Blocker spawning ─────────────────────────────────────────────────────
 
-        function spawnBlocker() {
+        function spawnBlocker(nearButton = false) {
             const type  = BLOCKER_TYPES[Math.floor(Math.random() * BLOCKER_TYPES.length)];
             const angle = Math.random() * Math.PI * 2;
-            // Spawn at a comfortable distance from the target, but never off-screen
-            const minDist = 180;
-            const maxDist = Math.min(
+
+            // If nearButton is true, spawn very close to button to guard it
+            const minDist = nearButton ? 80 : 180;
+            const maxDist = nearButton ? 150 : Math.min(
                 250,
                 Math.min(canvas.width, canvas.height) / 2 - type.size / 2 - 10
             );
@@ -649,19 +666,22 @@
             gs.flashMessage    = '';
             gs.hasPointer      = false;
 
-            // Player and pointer start at canvas centre
-            gs.playerX  = canvas.width  / 2;
-            gs.playerY  = canvas.height / 2;
-            gs.pointerX = canvas.width  / 2;
-            gs.pointerY = canvas.height / 2;
+            // Player starts in corner, far from button!
+            gs.playerX  = 50;
+            gs.playerY  = 50;
+            gs.pointerX = 50;
+            gs.pointerY = 50;
+            gs.playerVX = 0;
+            gs.playerVY = 0;
 
             attemptsEl.textContent = '0';
             timeLeftEl.textContent = GAME_DURATION;
             timerDisplay.classList.remove('urgent');
 
-            // Initial blockers
-            spawnBlocker();
-            spawnBlocker();
+            // Spawn blockers immediately around the button to guard it!
+            for (let i = 0; i < 4; i++) {
+                spawnBlocker(true); // true = spawn near button
+            }
 
             // Countdown timer
             gs.gameTimer = setInterval(() => {
@@ -672,9 +692,13 @@
                     timerDisplay.classList.add('urgent');
                 }
 
-                // Spawn more blockers as time passes
-                if (gs.timeLeft % 8 === 0 && gs.blockers.length < MAX_BLOCKERS) {
-                    spawnBlocker();
+                // Spawn more blockers aggressively
+                if (gs.timeLeft % 4 === 0 && gs.blockers.length < MAX_BLOCKERS) {
+                    spawnBlocker(gs.timeLeft < 30); // spawn near button in later game
+                }
+                // Extra blockers when getting close
+                if (gs.timeLeft === 45 || gs.timeLeft === 30 || gs.timeLeft === 15) {
+                    spawnBlocker(true);
                 }
 
                 if (gs.timeLeft <= 0) {
@@ -801,31 +825,67 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('ACCEPT WITH JOY', gs.targetX, gs.targetY);
 
-            // ── Move player toward pointer ──
-            // Only move if we have received at least one pointer event so the
-            // player dot doesn't fly from (0,0) to centre on game start.
+            // ── Move player with momentum physics ──
+            // Only move if we have received at least one pointer event
             if (gs.hasPointer) {
-                gs.playerX += (gs.pointerX - gs.playerX) * PLAYER_LERP;
-                gs.playerY += (gs.pointerY - gs.playerY) * PLAYER_LERP;
+                // Add acceleration toward pointer (but with momentum)
+                const dx = gs.pointerX - gs.playerX;
+                const dy = gs.pointerY - gs.playerY;
+
+                // Acceleration toward target
+                gs.playerVX += dx * 0.002;
+                gs.playerVY += dy * 0.002;
+
+                // Apply friction
+                gs.playerVX *= 0.92;
+                gs.playerVY *= 0.92;
+
+                // Cap max speed
+                const speed = Math.sqrt(gs.playerVX * gs.playerVX + gs.playerVY * gs.playerVY);
+                if (speed > 8) {
+                    gs.playerVX = (gs.playerVX / speed) * 8;
+                    gs.playerVY = (gs.playerVY / speed) * 8;
+                }
+
+                // Update position
+                gs.playerX += gs.playerVX;
+                gs.playerY += gs.playerVY;
             }
 
-            // Clamp player inside canvas
-            gs.playerX = Math.max(PLAYER_RADIUS, Math.min(canvas.width  - PLAYER_RADIUS, gs.playerX));
-            gs.playerY = Math.max(PLAYER_RADIUS, Math.min(canvas.height - PLAYER_RADIUS, gs.playerY));
+            // Clamp player inside canvas with bounce
+            if (gs.playerX < PLAYER_RADIUS) {
+                gs.playerX = PLAYER_RADIUS;
+                gs.playerVX = Math.abs(gs.playerVX) * 0.5;
+            }
+            if (gs.playerX > canvas.width - PLAYER_RADIUS) {
+                gs.playerX = canvas.width - PLAYER_RADIUS;
+                gs.playerVX = -Math.abs(gs.playerVX) * 0.5;
+            }
+            if (gs.playerY < PLAYER_RADIUS) {
+                gs.playerY = PLAYER_RADIUS;
+                gs.playerVY = Math.abs(gs.playerVY) * 0.5;
+            }
+            if (gs.playerY > canvas.height - PLAYER_RADIUS) {
+                gs.playerY = canvas.height - PLAYER_RADIUS;
+                gs.playerVY = -Math.abs(gs.playerVY) * 0.5;
+            }
 
             // ── Blockers ──
             let isBlocked = false;
             for (const b of gs.blockers) {
                 b.update();
 
-                // Push player away if overlapping
+                // Push player away if overlapping (with stronger force)
                 if (b.hits(gs.playerX, gs.playerY)) {
                     isBlocked = true;
                     const dx   = gs.playerX - b.x;
                     const dy   = gs.playerY - b.y;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    gs.playerX += (dx / dist) * 6;
-                    gs.playerY += (dy / dist) * 6;
+                    // Strong bounce away from blockers
+                    gs.playerVX += (dx / dist) * 3;
+                    gs.playerVY += (dy / dist) * 3;
+                    gs.playerX += (dx / dist) * 8;
+                    gs.playerY += (dy / dist) * 8;
                 }
 
                 b.draw();

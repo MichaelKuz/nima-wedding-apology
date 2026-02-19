@@ -4,622 +4,727 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Sorry I Can't Make It, Nima & Elien</title>
+    <title>RSVP Simulator | For Nima & Elien</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg:             #0C0B0A;
-            --text-primary:   #F5F0EB;
-            --text-secondary: #8C8580;
-            --accent:         #C4846E;
-            --accent-dim:     rgba(196, 132, 110, 0.12);
-            --hairline:       rgba(255, 255, 255, 0.07);
-            --ease:           cubic-bezier(0.25, 0.1, 0.25, 1);
-            --ease-out:       cubic-bezier(0.0, 0.0, 0.2, 1);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html {
-            font-size: 17px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-        }
-
-        /* ══ INTRO CANVAS OVERLAY ══
-           Sits on top of everything. JS animates it, then removes it. */
-        #intro-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: var(--bg);
-            cursor: default;
-        }
-
-        /* ══ CONFETTI ══ */
-        #confetti-canvas {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 900;
-        }
-
-        /* ══ NOISE OVERLAY ══ */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-            opacity: 0.03;
-            pointer-events: none;
-            z-index: 9999;
-        }
-
-        /* ══ PAGE CONTENT ══ */
-        .page {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 112px 40px 140px;
-            position: relative;
-            z-index: 1;
-        }
-
-        header {
-            margin-bottom: 128px;
-            opacity: 0;
-            transform: translateY(8px);
-            transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
-        }
-        header.visible { opacity: 1; transform: translateY(0); }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Inter', sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 28px;
-        }
-        .eyebrow::before {
-            content: '';
-            display: block;
-            width: 24px;
-            height: 1px;
-            background: var(--accent);
-            opacity: 0.6;
-        }
-
-        h1 {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: clamp(3rem, 7vw, 5rem);
-            font-weight: 700;
-            line-height: 1.05;
-            letter-spacing: -0.025em;
-            color: var(--text-primary);
-            margin-bottom: 28px;
-        }
-        h1 em { font-style: italic; font-weight: 400; color: var(--accent); }
-
-        .subtitle {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 1.2rem;
-            font-style: italic;
-            color: var(--text-secondary);
-            line-height: 1.65;
-            max-width: 480px;
-        }
-
-        .reasons { margin-bottom: 128px; }
-
-        .reason {
-            display: grid;
-            grid-template-columns: 52px 1fr;
-            gap: 0 36px;
-            padding: 36px 16px;
-            border-top: 1px solid var(--hairline);
-            opacity: 0;
-            transform: translateY(16px);
-            transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out), background 0.2s var(--ease);
-            margin: 0 -16px;
-        }
-        .reason:last-child { border-bottom: 1px solid var(--hairline); }
-        .reason.visible    { opacity: 1; transform: translateY(0); }
-        .reason:hover      { background: var(--accent-dim); }
-        .reason:hover .reason-number { color: var(--text-primary); }
-
-        .reason-number {
-            font-family: 'Inter', sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            letter-spacing: 0.12em;
-            color: var(--accent);
-            padding-top: 4px;
-            line-height: 1.75;
-            transition: color 0.2s var(--ease);
-        }
-        .reason-text {
-            font-size: 1rem;
-            line-height: 1.8;
-            color: var(--text-primary);
-            font-weight: 300;
-        }
-
-        .section-divider {
+            font-family: 'EB Garamond', Georgia, serif;
+            background: linear-gradient(135deg, #FFF9F4 0%, #FAF6F2 100%);
+            color: #2C2825;
+            overflow: hidden;
+            height: 100vh;
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 80px;
-            opacity: 0;
-            transform: translateY(12px);
-            transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
-        }
-        .section-divider.visible { opacity: 1; transform: translateY(0); }
-        .section-divider::before, .section-divider::after {
-            content: ''; flex: 1; height: 1px; background: var(--hairline);
-        }
-        .divider-mark {
-            width: 5px; height: 5px; border-radius: 50%;
-            background: var(--accent); opacity: 0.6;
+            justify-content: center;
         }
 
-        .closing {
-            max-width: 560px;
-            margin: 0 auto;
-            text-align: center;
-            opacity: 0;
-            transform: translateY(16px);
-            transition: opacity 0.65s var(--ease-out), transform 0.65s var(--ease-out);
+        /* Game Container */
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            height: 100vh;
+            max-height: 700px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .closing.visible { opacity: 1; transform: translateY(0); }
-        .closing h2 {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 2.4rem;
+
+        /* Intro Screen */
+        .intro-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #FFFCF9;
+            border: 2px solid #D4C4B8;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            z-index: 100;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .intro-screen.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        .intro-title {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 3.5rem;
             font-weight: 400;
-            font-style: italic;
-            color: var(--text-primary);
-            margin-bottom: 36px;
-            line-height: 1.2;
-        }
-        .closing p {
-            font-size: 1rem;
-            line-height: 1.85;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
-        .signature {
-            font-family: 'Cormorant Garamond', Georgia, serif;
-            font-size: 1.2rem;
-            font-style: italic;
-            color: var(--text-secondary);
-            margin-top: 52px;
-            line-height: 1.7;
-            border-top: 1px solid var(--hairline);
-            padding-top: 40px;
+            color: #8B7355;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
         }
 
+        .intro-subtitle {
+            font-size: 1.3rem;
+            color: #6B5D54;
+            font-style: italic;
+            margin-bottom: 3rem;
+        }
+
+        .start-button {
+            background: #8B7355;
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-family: 'EB Garamond', serif;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .start-button:hover {
+            background: #6B5444;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Game Canvas */
+        #gameCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: none;
+        }
+
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #8B7355;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 200;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+
+        .custom-cursor.grabbing {
+            transform: scale(0.8);
+            background: rgba(139, 115, 85, 0.2);
+        }
+
+        /* Game UI Overlay */
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .timer {
+            background: white;
+            padding: 0.5rem 1rem;
+            border: 1px solid #D4C4B8;
+            font-size: 1.1rem;
+            color: #6B5D54;
+        }
+
+        .attempt-counter {
+            background: white;
+            padding: 0.5rem 1rem;
+            border: 1px solid #D4C4B8;
+            font-size: 1.1rem;
+            color: #6B5D54;
+        }
+
+        /* Game Over Screen */
+        .game-over {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #FFFCF9;
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+
+        .game-over.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .game-over-title {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 2.5rem;
+            color: #8B7355;
+            margin-bottom: 2rem;
+        }
+
+        .stats {
+            background: white;
+            border: 1px solid #D4C4B8;
+            padding: 2rem 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .stat-line {
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+            color: #6B5D54;
+        }
+
+        .stat-number {
+            font-weight: bold;
+            color: #8B7355;
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: white;
+            border: 1px solid #D4C4B8;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .leaderboard-title {
+            font-size: 1.5rem;
+            color: #8B7355;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #F0E8E0;
+            font-size: 1.1rem;
+        }
+
+        .leaderboard-name {
+            color: #6B5D54;
+        }
+
+        .leaderboard-score {
+            color: #8B7355;
+            font-weight: bold;
+        }
+
+        /* Sincere Message */
+        .sincere-message {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .sincere-message.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .sincere-text {
+            max-width: 600px;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #2C2825;
+            margin-bottom: 2rem;
+        }
+
+        .sincere-text em {
+            font-style: italic;
+            color: #8B7355;
+        }
+
+        .final-message {
+            font-size: 1.2rem;
+            color: #6B5D54;
+            font-style: italic;
+        }
+
+        /* Confetti Canvas */
+        #confettiCanvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 300;
+        }
+
+        /* Mobile adjustments */
         @media (max-width: 600px) {
-            .page { padding: 72px 24px 100px; }
-            header { margin-bottom: 88px; }
-            .reasons { margin-bottom: 88px; }
-            .reason { grid-template-columns: 40px 1fr; gap: 0 20px; }
+            .intro-title { font-size: 2.5rem; }
+            .intro-subtitle { font-size: 1.1rem; }
+            .game-over-title { font-size: 2rem; }
+            .stats { padding: 1.5rem 2rem; }
+            .leaderboard { padding: 1.5rem; }
         }
     </style>
 </head>
 <body>
+    <!-- Custom Cursor -->
+    <div class="custom-cursor" id="cursor"></div>
 
-<!-- Intro canvas — JS draws and animates this, then removes it -->
-<canvas id="intro-canvas"></canvas>
-<canvas id="confetti-canvas"></canvas>
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Intro Screen -->
+        <div class="intro-screen" id="introScreen">
+            <h1 class="intro-title">RSVP Simulator</h1>
+            <p class="intro-subtitle">Michael vs. Life: The Wedding Edition</p>
+            <button class="start-button" onclick="startGame()">Attempt to RSVP</button>
+        </div>
 
-<div class="page">
-    <header>
-        <p class="eyebrow">A Note from Manhattan</p>
-        <h1>12 Reasons I Can't Make It to Your <em>Wedding,</em> Nima&nbsp;&amp;&nbsp;Elien.</h1>
-        <p class="subtitle">A marketing buddy's rigorous, data-driven analysis of why Manhattan parenthood and San Miguel de Allende are mutually exclusive.</p>
-    </header>
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas"></canvas>
 
-    <div class="reasons">
-        <div class="reason"><div class="reason-number">01</div><div class="reason-text">I tried to growth hack my calendar. The kids' bedtime sprint won the A/B test. It always does.</div></div>
-        <div class="reason"><div class="reason-number">02</div><div class="reason-text">Manhattan to San Miguel de Allende with children isn't a trip. It's a multi-phase campaign with too many failure points and no fallback plan.</div></div>
-        <div class="reason"><div class="reason-number">03</div><div class="reason-text">The CAC (Cost of Acquiring Childcare) for a destination wedding in Mexico exceeded my annual marketing budget. The LTV math isn't pretty.</div></div>
-        <div class="reason"><div class="reason-number">04</div><div class="reason-text">My KPIs this quarter: diapers changed, bedtime stories read, legendary Nima parties attended. One of these has been consistently underperforming.</div></div>
-        <div class="reason"><div class="reason-number">05</div><div class="reason-text">While you're scaling Pearmill, I'm scaling Mount Laundry. Different trajectories, same hustle.</div></div>
-        <div class="reason"><div class="reason-number">06</div><div class="reason-text">I'm deep in a growth sprint that lasts 18 years. Per child. The backlog is extensive and the velocity is not what I projected.</div></div>
-        <div class="reason"><div class="reason-number">07</div><div class="reason-text">User retention (kids) requires 24/7 on-call support. International travel violates every SLA I have committed to.</div></div>
-        <div class="reason"><div class="reason-number">08</div><div class="reason-text">My retargeting strategy failed. The kids won't let me leave the apartment after 6pm, let alone the country. Bounce rate: 100%.</div></div>
-        <div class="reason"><div class="reason-number">09</div><div class="reason-text">I optimized the wrong funnel. Breakfast → school drop-off → survive → pickup → collapse. Mexico doesn't fit the workflow.</div></div>
-        <div class="reason"><div class="reason-number">10</div><div class="reason-text">Manhattan to Brooklyn was already hard enough. Adding an international leg to a venue as beautiful as Instituto Allende only makes the guilt more exquisite.</div></div>
-        <div class="reason"><div class="reason-number">11</div><div class="reason-text">I'm running a lifetime value analysis on sleep. I am deep in the red. Adding a destination wedding would trigger a churn event I cannot recover from.</div></div>
-        <div class="reason"><div class="reason-number">12</div><div class="reason-text">I A/B tested my excuses. This one had the highest conversion rate. It's a data-driven decision. I stand by it. I'm still sorry.</div></div>
+        <!-- Game UI -->
+        <div class="game-ui" id="gameUI" style="display: none;">
+            <div class="timer">Time Left: <span id="timeLeft">60</span>s</div>
+            <div class="attempt-counter">Attempts: <span id="attempts">0</span></div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div class="game-over" id="gameOver">
+            <h2 class="game-over-title">RSVP Failed</h2>
+
+            <div class="stats">
+                <div class="stat-line">Michael failed to RSVP</div>
+                <div class="stat-line">Blocked by: <span class="stat-number" id="blockerCount">0</span> life events</div>
+                <div class="stat-line">Attempts made: <span class="stat-number" id="finalAttempts">0</span></div>
+                <div class="stat-line">Closest distance: <span class="stat-number" id="closestDistance">0</span>px</div>
+                <div class="stat-line">(Approximately <span class="stat-number">3,147</span> miles from San Miguel de Allende)</div>
+            </div>
+
+            <div class="leaderboard">
+                <h3 class="leaderboard-title">Hall of Absent Friends</h3>
+                <div class="leaderboard-entry">
+                    <span class="leaderboard-name">Michael (You)</span>
+                    <span class="leaderboard-score" id="yourScore">0 attempts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span class="leaderboard-name">That Friend Who Always Flakes</span>
+                    <span class="leaderboard-score">0 attempts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span class="leaderboard-name">Your Mom</span>
+                    <span class="leaderboard-score">92 attempts (still disappointed)</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span class="leaderboard-name">Work Email #47</span>
+                    <span class="leaderboard-score">∞ attempts</span>
+                </div>
+            </div>
+
+            <button class="start-button" onclick="showSincereMessage()">Continue</button>
+        </div>
+
+        <!-- Sincere Message -->
+        <div class="sincere-message" id="sincereMessage">
+            <div class="sincere-text">
+                Behind every excuse was a choice.<br>
+                I chose wrong.<br><br>
+                <em>Nima & Elien</em>, you deserved better.<br>
+                This ridiculous game is my way of saying:<br>
+                I'm genuinely sorry I wasn't there.<br><br>
+                Your friendship matters more than all these pixels.
+            </div>
+            <div class="final-message">
+                With love and real regret,<br>
+                Michael
+            </div>
+        </div>
     </div>
 
-    <div class="section-divider"><div class="divider-mark"></div></div>
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
 
-    <div class="closing">
-        <h2>But seriously, Nima.</h2>
-        <p>I'm genuinely bummed to miss your day at Instituto Allende. You throw the best parties in Brooklyn, and I know this wedding will be the most beautiful thing you've ever produced — and you've produced some great ones.</p>
-        <p>I'm so happy you found Elien. Here's to your greatest campaign yet: building Pearmill and a lifetime of happiness together. I'll be thinking of you both and raising something (almost certainly a sippy cup) from Manhattan in your honor.</p>
-        <div class="signature">With love and a genuine case of FOMO,<br>Your Marketing Buddy ❤️</div>
-    </div>
-</div>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-//  INTRO — drawn entirely on a canvas overlay
-//  Timeline (all times in ms):
-//    0      – canvas fades in (black bg already visible)
-//    300    – "FOR" fades in
-//    800    – "NIMA" slams in from top
-//    1200   – "&" fades in with glow
-//    1600   – "ELIEN" slams in from bottom
-//    2400   – hold, then names begin to EXPLODE outward
-//    3600   – canvas fades to black, confetti fires
-//    4200   – canvas removed, page revealed
-// ═══════════════════════════════════════════════════════════
-(function () {
-    const canvas = document.getElementById('intro-canvas');
-    const ctx    = canvas.getContext('2d');
-
-    let W, H;
-    function resize() {
-        W = canvas.width  = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // ── Easing functions ──
-    function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
-    function easeInExpo(t)  { return t === 0 ? 0 : Math.pow(2, 10 * t - 10); }
-    function easeOutBack(t) {
-        const c1 = 1.70158, c3 = c1 + 1;
-        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
-    function norm(t, a, b)    { return clamp((t - a) / (b - a), 0, 1); }
-
-    // ── Font loading guard ──
-    // Wait for Cormorant Garamond before starting
-    let fontsReady = false;
-    document.fonts.load('700 100px "Cormorant Garamond"').then(() => {
-        fontsReady = true;
-    });
-
-    // ── Particle field (ambient dots) ──
-    const particles = Array.from({ length: 90 }, () => ({
-        x: Math.random(), y: Math.random(),
-        r: Math.random() * 1.4 + 0.3,
-        vx: (Math.random() - 0.5) * 0.0003,
-        vy: (Math.random() - 0.5) * 0.0003,
-        phase: Math.random() * Math.PI * 2,
-    }));
-
-    const START = performance.now();
-    let introRemoved = false;
-
-    function draw(now) {
-        if (introRemoved) return;
-        if (!fontsReady) { requestAnimationFrame(draw); return; }
-
-        const t = now - START; // ms elapsed
-
-        ctx.clearRect(0, 0, W, H);
-
-        // ── Background ──
-        ctx.fillStyle = '#0C0B0A';
-        ctx.fillRect(0, 0, W, H);
-
-        // Canvas-level alpha for fade-out at end
-        const exitAlpha = 1 - easeInExpo(norm(t, 3600, 4200));
-        ctx.globalAlpha = exitAlpha;
-
-        // ── Particle field ──
-        const particleAlpha = clamp(norm(t, 200, 900), 0, 1) * (1 - norm(t, 2800, 3600));
-        if (particleAlpha > 0) {
-            const tick = t * 0.001;
-            particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0;
-                if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0;
-                const a = particleAlpha * (0.15 + Math.sin(tick + p.phase) * 0.1);
-                ctx.beginPath();
-                ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(196,132,110,${a})`;
-                ctx.fill();
-            });
-        }
-
-        // ── Ambient glow behind center ──
-        const glowAlpha = clamp(norm(t, 300, 1200), 0, 1) * (1 - norm(t, 2800, 3600));
-        if (glowAlpha > 0) {
-            const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W, H) * 0.6);
-            grd.addColorStop(0,   `rgba(196,132,110,${0.12 * glowAlpha})`);
-            grd.addColorStop(0.5, `rgba(196,132,110,${0.04 * glowAlpha})`);
-            grd.addColorStop(1,   'rgba(196,132,110,0)');
-            ctx.fillStyle = grd;
-            ctx.fillRect(0, 0, W, H);
-        }
-
-        // ── Font sizes — responsive ──
-        const nameFontSize = Math.min(W * 0.28, H * 0.28, 220);
-        const ampFontSize  = Math.min(W * 0.10, H * 0.12, 90);
-        const forFontSize  = Math.min(W * 0.025, 13);
-        const nameFont     = `700 ${nameFontSize}px "Cormorant Garamond", Georgia, serif`;
-        const ampFont      = `400 italic ${ampFontSize}px "Cormorant Garamond", Georgia, serif`;
-        const forFont      = `500 ${forFontSize}px "Inter", sans-serif`;
-
-        // ── Measure text ──
-        ctx.font = nameFont;
-        ctx.textBaseline = 'alphabetic';
-        const nimaW  = ctx.measureText('Nima').width;
-        const elienW = ctx.measureText('Elien').width;
-        ctx.font = ampFont;
-        const ampW   = ctx.measureText('&').width;
-
-        // Layout: vertical center of mass
-        const nameLineH = nameFontSize * 0.88;
-        const gap       = ampFontSize * 0.7;
-        const totalH    = nameLineH + gap + ampFontSize * 0.7 + gap + nameLineH;
-        const startY    = H / 2 - totalH / 2 + nameLineH;
-
-        const nimaBaseY  = startY;
-        const ampY       = startY + gap + ampFontSize * 0.7;
-        const elienBaseY = ampY + gap + nameLineH * 0.85;
-
-        // ── EXPLOSION phase (t 2400–3600) ──
-        const explodeP = easeInExpo(norm(t, 2400, 3400));
-
-        // ── "FOR" label ──
-        const forAlpha = easeOutExpo(norm(t, 300, 700)) * (1 - norm(t, 2200, 2600));
-        if (forAlpha > 0) {
-            ctx.save();
-            ctx.globalAlpha *= forAlpha;
-            ctx.font = forFont;
-            ctx.letterSpacing = '0.22em';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#C4846E';
-            ctx.fillText('FOR', W / 2, nimaBaseY - nameFontSize * 0.22);
-            // Side rules
-            const ruleY   = nimaBaseY - nameFontSize * 0.22 - forFontSize * 0.3;
-            const ruleLen = 28;
-            const labelW  = ctx.measureText('FOR').width + 24;
-            ctx.strokeStyle = 'rgba(196,132,110,0.4)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(W/2 - labelW/2 - ruleLen - 8, ruleY);
-            ctx.lineTo(W/2 - labelW/2 - 8, ruleY);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(W/2 + labelW/2 + 8, ruleY);
-            ctx.lineTo(W/2 + labelW/2 + ruleLen + 8, ruleY);
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        // ── NIMA ──
-        const nimaIn  = easeOutBack(norm(t, 800, 1300));
-        const nimaOffY = (1 - nimaIn) * -H * 0.6;   // enters from top
-        const nimaExplodeY = explodeP * -H * 0.9;
-        const nimaScale    = 1 + explodeP * 5;
-        const nimaAlpha    = nimaIn * (1 - easeInExpo(norm(t, 2400, 3200)));
-
-        if (nimaAlpha > 0) {
-            ctx.save();
-            ctx.globalAlpha *= nimaAlpha;
-            const cx = W / 2, cy = nimaBaseY + nimaOffY + nimaExplodeY;
-            ctx.translate(cx, cy);
-            ctx.scale(nimaScale, nimaScale);
-
-            // RGB ghost layers
-            const rgbShift = explodeP * 14;
-            ctx.font = nameFont;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-
-            if (rgbShift > 0.5) {
-                ctx.globalAlpha *= 0.5;
-                ctx.fillStyle = 'rgb(255,80,80)';
-                ctx.fillText('Nima', -rgbShift, 0);
-                ctx.fillStyle = 'rgb(80,180,255)';
-                ctx.fillText('Nima', rgbShift, 0);
-                ctx.globalAlpha /= 0.5;
-            }
-
-            ctx.fillStyle = '#F5F0EB';
-            ctx.filter = `blur(${explodeP * explodeP * 10}px)`;
-            ctx.fillText('Nima', 0, 0);
-            ctx.filter = 'none';
-            ctx.restore();
-        }
-
-        // ── & ──
-        const ampIn    = easeOutExpo(norm(t, 1200, 1700));
-        const ampAlpha = ampIn * (1 - norm(t, 2100, 2500));
-
-        if (ampAlpha > 0) {
-            ctx.save();
-            ctx.globalAlpha *= ampAlpha;
-            ctx.font = ampFont;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-
-            // Glow
-            ctx.shadowColor  = 'rgba(196,132,110,0.8)';
-            ctx.shadowBlur   = 40 + Math.sin(t * 0.003) * 15;
-            ctx.fillStyle    = '#C4846E';
-            ctx.fillText('&', W / 2, ampY);
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        }
-
-        // ── ELIEN ──
-        const elienIn  = easeOutBack(norm(t, 1600, 2100));
-        const elienOffY = (1 - elienIn) * H * 0.6;  // enters from bottom
-        const elienExplodeY = explodeP * H * 0.9;
-        const elienScale    = 1 + explodeP * 4.5;
-        const elienAlpha    = elienIn * (1 - easeInExpo(norm(t, 2400, 3200)));
-
-        if (elienAlpha > 0) {
-            ctx.save();
-            ctx.globalAlpha *= elienAlpha;
-            const cx = W / 2, cy = elienBaseY + elienOffY + elienExplodeY;
-            ctx.translate(cx, cy);
-            ctx.scale(elienScale, elienScale);
-
-            const rgbShift = explodeP * 12;
-            ctx.font = nameFont;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-
-            if (rgbShift > 0.5) {
-                ctx.globalAlpha *= 0.5;
-                ctx.fillStyle = 'rgb(255,80,80)';
-                ctx.fillText('Elien', -rgbShift, 0);
-                ctx.fillStyle = 'rgb(80,180,255)';
-                ctx.fillText('Elien', rgbShift, 0);
-                ctx.globalAlpha /= 0.5;
-            }
-
-            ctx.fillStyle = '#F5F0EB';
-            ctx.filter = `blur(${explodeP * explodeP * 8}px)`;
-            ctx.fillText('Elien', 0, 0);
-            ctx.filter = 'none';
-            ctx.restore();
-        }
-
-        // ── "SCROLL" hint ──
-        const scrollAlpha = clamp(norm(t, 2100, 2400) - norm(t, 2400, 2700), 0, 1)
-                          * easeOutExpo(norm(t, 2100, 2400));
-        // Just show after elien enters, before explosion
-        const hintAlpha = easeOutExpo(norm(t, 2100, 2400)) * (1 - norm(t, 2300, 2600));
-        if (hintAlpha > 0) {
-            ctx.save();
-            ctx.globalAlpha *= hintAlpha;
-            const hintFont = `400 ${Math.min(W * 0.02, 10)}px "Inter", sans-serif`;
-            ctx.font = hintFont;
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#8C8580';
-            ctx.letterSpacing = '0.2em';
-            ctx.fillText('SCROLL', W / 2, H - 60);
-            ctx.restore();
-        }
-
-        ctx.globalAlpha = 1;
-
-        // ── End: remove canvas, start page ──
-        if (t >= 4200 && !introRemoved) {
-            introRemoved = true;
-            canvas.style.transition = 'opacity 0.3s';
-            canvas.style.opacity = '0';
-            setTimeout(() => {
-                canvas.remove();
-                fireConfetti();
-                startPageReveal();
-            }, 300);
-            return;
-        }
-
-        requestAnimationFrame(draw);
-    }
-
-    // Small delay to let fonts load
-    setTimeout(() => requestAnimationFrame(draw), 100);
-
-})();
-
-
-// ═══════════════════════════════════════════════════════════
-//  PAGE REVEAL + SCROLL ANIMATIONS
-// ═══════════════════════════════════════════════════════════
-function startPageReveal() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const delay = parseInt(entry.target.dataset.delay || 0);
-                setTimeout(() => entry.target.classList.add('visible'), delay);
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
-
-    document.querySelectorAll('.reason').forEach((el, i) => {
-        el.dataset.delay = i * 55;
-        observer.observe(el);
-    });
-
-    document.querySelectorAll('header, .closing, .section-divider').forEach(el => {
-        observer.observe(el);
-    });
-}
-
-
-// ═══════════════════════════════════════════════════════════
-//  CONFETTI
-// ═══════════════════════════════════════════════════════════
-function fireConfetti() {
-    const canvas = document.getElementById('confetti-canvas');
-    const ctx    = canvas.getContext('2d');
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const COLORS   = ['#C4846E', '#8C7060', '#D4A99A', '#F5F0EB', '#78716C', '#E8B89A'];
-    const DURATION = 3000;
-    const start    = performance.now();
-
-    const parts = Array.from({ length: 65 }, () => {
-        const angle = (Math.random() * 200 + 170) * (Math.PI / 180);
-        const speed = Math.random() * 12 + 4;
-        return {
-            x: canvas.width/2 + (Math.random() - 0.5) * 120,
-            y: canvas.height/2,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            r: Math.random() * 4 + 2,
-            w: Math.random() * 10 + 4,
-            h: Math.random() * 3 + 2,
-            rot: Math.random() * Math.PI * 2,
-            rotV: (Math.random() - 0.5) * 0.25,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            rect: Math.random() > 0.5,
+    <script>
+        // Game State
+        let gameState = {
+            isPlaying: false,
+            attempts: 0,
+            timeLeft: 60,
+            blockers: [],
+            playerX: 0,
+            playerY: 0,
+            targetX: 0,
+            targetY: 0,
+            mouseX: 0,
+            mouseY: 0,
+            closestDistance: Infinity,
+            blockerCount: 0,
+            gameTimer: null,
+            animationFrame: null
         };
-    });
 
-    function draw(now) {
-        const elapsed = now - start;
-        if (elapsed > DURATION) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const t = elapsed / DURATION;
-        parts.forEach(p => {
-            p.vy  += 0.22; p.vx *= 0.993;
-            p.x   += p.vx; p.y  += p.vy; p.rot += p.rotV;
-            ctx.globalAlpha = Math.max(0, 1 - t * t * 1.5);
-            ctx.save();
-            ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-            ctx.fillStyle = p.color;
-            if (p.rect) { ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); }
-            else { ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI*2); ctx.fill(); }
-            ctx.restore();
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Custom cursor
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX - 15 + 'px';
+            cursor.style.top = e.clientY - 15 + 'px';
+            if (gameState.isPlaying) {
+                gameState.mouseX = e.clientX;
+                gameState.mouseY = e.clientY;
+            }
         });
-        ctx.globalAlpha = 1;
-        requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(draw);
-}
-</script>
+
+        // Blocker types with labels
+        const BLOCKER_TYPES = [
+            { label: 'Q4 Planning', color: '#4A5568', size: 80 },
+            { label: 'Slack Notification', color: '#6B46C1', size: 60 },
+            { label: "Kid's Bedtime", color: '#DC2626', size: 100 },
+            { label: 'Work Email', color: '#2563EB', size: 70 },
+            { label: "Mom's Call", color: '#10B981', size: 75 },
+            { label: 'Client Meeting', color: '#F59E0B', size: 85 },
+            { label: 'Netflix Autoplay', color: '#EF4444', size: 65 },
+            { label: 'Mortgage Payment', color: '#059669', size: 90 },
+            { label: 'School Pickup', color: '#8B5CF6', size: 75 },
+            { label: 'Grocery Run', color: '#EC4899', size: 70 },
+            { label: 'Zoom Fatigue', color: '#6B7280', size: 80 },
+            { label: 'Existential Crisis', color: '#1F2937', size: 95 }
+        ];
+
+        // Blocker class
+        class Blocker {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = type.size;
+                this.color = type.color;
+                this.label = type.label;
+                this.angle = Math.random() * Math.PI * 2;
+                this.angleSpeed = (Math.random() - 0.5) * 0.05;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.angle += this.angleSpeed;
+
+                // Bounce off walls
+                if (this.x - this.size/2 < 0 || this.x + this.size/2 > canvas.width) {
+                    this.vx = -this.vx;
+                }
+                if (this.y - this.size/2 < 0 || this.y + this.size/2 > canvas.height) {
+                    this.vy = -this.vy;
+                }
+
+                // Gravitational pull towards RSVP button (makes it harder)
+                const dx = gameState.targetX - this.x;
+                const dy = gameState.targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 100 && dist < 300) {
+                    this.vx += (dx / dist) * 0.05;
+                    this.vy += (dy / dist) * 0.05;
+                }
+
+                // Speed limit
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 3) {
+                    this.vx = (this.vx / speed) * 3;
+                    this.vy = (this.vy / speed) * 3;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Draw blocker box
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.9;
+                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+
+                // Draw label
+                ctx.fillStyle = 'white';
+                ctx.font = '14px "EB Garamond", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.globalAlpha = 1;
+                ctx.fillText(this.label, 0, 0);
+
+                ctx.restore();
+            }
+
+            isBlocking(x, y) {
+                return Math.abs(x - this.x) < this.size/2 && Math.abs(y - this.y) < this.size/2;
+            }
+        }
+
+        // Initialize canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            gameState.targetX = canvas.width / 2;
+            gameState.targetY = canvas.height / 2;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Start game
+        function startGame() {
+            document.getElementById('introScreen').classList.add('hidden');
+            document.getElementById('gameUI').style.display = 'flex';
+
+            gameState.isPlaying = true;
+            gameState.attempts = 0;
+            gameState.timeLeft = 60;
+            gameState.blockers = [];
+            gameState.closestDistance = Infinity;
+            gameState.blockerCount = 0;
+
+            // Start spawning blockers
+            spawnBlocker();
+
+            // Start game timer
+            gameState.gameTimer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timeLeft').textContent = gameState.timeLeft;
+
+                // Spawn more blockers over time
+                if (gameState.timeLeft % 5 === 0 && gameState.blockers.length < 12) {
+                    spawnBlocker();
+                }
+
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            // Start game loop
+            gameLoop();
+        }
+
+        // Spawn a new blocker
+        function spawnBlocker() {
+            const type = BLOCKER_TYPES[Math.floor(Math.random() * BLOCKER_TYPES.length)];
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 200 + Math.random() * 100;
+            const x = gameState.targetX + Math.cos(angle) * distance;
+            const y = gameState.targetY + Math.sin(angle) * distance;
+
+            gameState.blockers.push(new Blocker(type, x, y));
+            gameState.blockerCount++;
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw RSVP card background
+            ctx.fillStyle = '#FFFCF9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw decorative border
+            ctx.strokeStyle = '#D4C4B8';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            ctx.setLineDash([]);
+
+            // Draw RSVP button
+            const buttonWidth = 200;
+            const buttonHeight = 60;
+            const buttonX = gameState.targetX - buttonWidth/2;
+            const buttonY = gameState.targetY - buttonHeight/2;
+
+            // Button glow effect
+            ctx.shadowColor = '#8B7355';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(buttonX, buttonY, buttonWidth, buttonHeight);
+            ctx.shadowBlur = 0;
+
+            // Button text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 18px "EB Garamond", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('ACCEPT WITH JOY', gameState.targetX, gameState.targetY);
+
+            // Update and draw blockers
+            gameState.blockers.forEach(blocker => {
+                blocker.update();
+                blocker.draw();
+            });
+
+            // Draw player (Michael)
+            const playerRadius = 15;
+            gameState.playerX += (gameState.mouseX - gameState.playerX) * 0.1;
+            gameState.playerY += (gameState.mouseY - gameState.playerY) * 0.1;
+
+            // Check if blocked
+            let isBlocked = false;
+            gameState.blockers.forEach(blocker => {
+                if (blocker.isBlocking(gameState.playerX, gameState.playerY)) {
+                    isBlocked = true;
+                    // Push player away
+                    const dx = gameState.playerX - blocker.x;
+                    const dy = gameState.playerY - blocker.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        gameState.playerX += (dx / dist) * 5;
+                        gameState.playerY += (dy / dist) * 5;
+                    }
+                }
+            });
+
+            // Draw player
+            ctx.fillStyle = isBlocked ? '#EF4444' : '#10B981';
+            ctx.beginPath();
+            ctx.arc(gameState.playerX, gameState.playerY, playerRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw "Michael" label
+            ctx.fillStyle = '#2C2825';
+            ctx.font = '12px "EB Garamond", serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Michael', gameState.playerX, gameState.playerY - 25);
+
+            // Check if clicking on button
+            const distance = Math.sqrt(
+                Math.pow(gameState.playerX - gameState.targetX, 2) +
+                Math.pow(gameState.playerY - gameState.targetY, 2)
+            );
+
+            if (distance < Math.min(gameState.closestDistance, 999)) {
+                gameState.closestDistance = Math.floor(distance);
+            }
+
+            // Check for click
+            canvas.onclick = () => {
+                if (gameState.isPlaying &&
+                    Math.abs(gameState.playerX - gameState.targetX) < buttonWidth/2 &&
+                    Math.abs(gameState.playerY - gameState.targetY) < buttonHeight/2 &&
+                    !isBlocked) {
+                    // This should never happen in practice
+                    alert("Wait, you actually did it? This wasn't supposed to be possible...");
+                    endGame();
+                }
+                gameState.attempts++;
+                document.getElementById('attempts').textContent = gameState.attempts;
+            };
+
+            gameState.animationFrame = requestAnimationFrame(gameLoop);
+        }
+
+        // End game
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.gameTimer);
+            cancelAnimationFrame(gameState.animationFrame);
+
+            // Update final stats
+            document.getElementById('blockerCount').textContent = gameState.blockerCount;
+            document.getElementById('finalAttempts').textContent = gameState.attempts;
+            document.getElementById('closestDistance').textContent = gameState.closestDistance;
+            document.getElementById('yourScore').textContent = gameState.attempts + ' attempts';
+
+            // Show game over screen
+            setTimeout(() => {
+                document.getElementById('gameOver').classList.add('visible');
+            }, 500);
+        }
+
+        // Show sincere message
+        function showSincereMessage() {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('sincereMessage').classList.add('visible');
+
+            // Fire confetti after a moment
+            setTimeout(fireConfetti, 1500);
+        }
+
+        // Confetti effect
+        function fireConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#8B7355', '#D4C4B8', '#FAF6F2', '#6B5D54', '#F0E8E0'];
+            const particles = [];
+
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: -20,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: Math.random() * 3 + 2,
+                    size: Math.random() * 4 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    angle: Math.random() * Math.PI * 2,
+                    angleSpeed: (Math.random() - 0.5) * 0.1
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.1; // gravity
+                    p.angle += p.angleSpeed;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                });
+
+                // Remove particles that have fallen off screen
+                particles.forEach((p, i) => {
+                    if (p.y > canvas.height) {
+                        particles.splice(i, 1);
+                    }
+                });
+
+                if (particles.length > 0) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            animate();
+        }
+    </script>
 </body>
 </html>
